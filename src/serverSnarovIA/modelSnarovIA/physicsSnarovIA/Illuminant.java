@@ -1,0 +1,119 @@
+package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
+
+import javax.vecmath.Point3d;
+import javax.media.j3d.BoundingSphere;
+import javax.vecmath.Vector3d;
+import static java.lang.Math.*;
+
+//представляет собой точечный источник света с заданной силой света,
+//свечение которого распространяется внутри ограничивающей сферы
+public class Illuminant {
+
+	//константы
+	private final static double Km = 683;		//максимальное значение спектральной световой эффективности монохроматического излучения(лм/Вт)
+	
+	//поля
+	private final Point3d source = new Point3d();					//местоположение источника света в пр-ве
+	private final BoundingSphere bounds = new BoundingSphere();		//сфера, ограничивающее распространение света
+	private double intensity;										//сила света источника (кд)
+	private double luminousEfficacy;								//световая эффективность источника света (лм/Вт)
+
+	//конструкторы
+	public Illuminant(double aIntensity, double aLuminousEfficacy, BoundingSphere aBounds) {
+		intensity = aIntensity;
+		setLuminousEfficacy(aLuminousEfficacy);
+		bounds.set(aBounds);
+	}
+
+	public Illuminant(double aIntensity, double aLuminousEfficacy, Point3d boundsCenter, double boundsRadius) {
+		this(aIntensity, aLuminousEfficacy, new BoundingSphere(boundsCenter, boundsRadius));
+	}
+
+	public Illuminant(double aIntensity,  double aLuminousEfficacy, BoundingSphere aBounds, Point3d aCoords) {
+		this(aIntensity, aLuminousEfficacy, aBounds);
+		source.set(aCoords);
+	}
+
+	public Illuminant(double aIntensity, double aLuminousEfficacy, Point3d boundsCenter,
+					  double boundsRadius, Point3d aCoords) {
+		this(aIntensity, aLuminousEfficacy, new BoundingSphere(boundsCenter, boundsRadius), aCoords);
+	}
+	
+	//методы доступа и модификации
+	public Point3d getCoords() {
+		return source;
+	}
+
+	public BoundingSphere getBounds() {
+		return bounds;
+	}
+
+	public double getIntensity() {
+		return intensity;
+	}
+	
+	public double getLuminousEfficacy() {
+		return luminousEfficacy;
+	}
+
+	public void setCoords(Point3d aSource) {
+		source.set(aSource);
+	}
+
+	public void setBounds(BoundingSphere aBounds) {
+		bounds.set(aBounds);
+	}
+
+	public void setIntensity(double aIntensity) {
+		intensity = aIntensity;
+	}
+	
+	public final void setLuminousEfficacy(double aLuminousEfficacy) {	 //если световая эффективность больше,
+																 //чем максимально возможная, то устаннавливается максимально возможная
+		if(aLuminousEfficacy > Km)
+			luminousEfficacy = Km;
+		else
+			luminousEfficacy = aLuminousEfficacy;
+	}
+	
+	//поведение
+	public double getRadiantFlux(Point3d A, Point3d B, Point3d C){	//расчитывает поток излучения через поверхность в виде параллелограмма,
+																	 //заданного тремя вершинами (А и C противоположны), от этого источника света (Вт)
+		
+		double radiantFlux = 0;
+		//находим точку пересечения диаганалей параллелограмма, задающего поверхность
+		Point3d planeCenter = new Point3d();
+		planeCenter.add(A, C);
+		planeCenter.scale(.5);
+		
+		if(bounds.intersect(planeCenter)){								//если плоскость в зоне освещения
+			//находим векторы, соответсвующие сторонам параллелограмма
+			Vector3d sideVec1 = new Vector3d();
+			Vector3d sideVec2 = new Vector3d();
+			sideVec1.sub(B, A);
+			sideVec2.sub(C, B);
+			
+			//находим нормаль к плоскости
+			Vector3d norm = new Vector3d();
+			norm.cross(sideVec1, sideVec2);
+			
+			//находим вектор луча света
+			Vector3d ray = new Vector3d();
+			ray.sub(planeCenter, source);
+			
+			//находим угол между нормалью и направлением луча (рад)
+			double angle = norm.angle(ray);
+			
+			//находим значение освещенности	(лк)
+			double illuminance = (intensity / ray.lengthSquared()) * abs(cos(angle));
+			
+			//находим площадь параллелограмма, пользуясь псевдоскалярным произведением (м^2)
+			double area = sideVec1.length() * sideVec2.length() * sin(sideVec1.angle(sideVec2));
+			
+			//находим  поток излучения (Вт)
+			double luminousFlux = (illuminance * area) / luminousEfficacy;
+		}
+		
+		return radiantFlux;
+	}
+}

@@ -77,26 +77,17 @@ public class Illuminant {
 	}
 	
 	//поведение
-	public double getRadiantFlux(Point3d A, Point3d B, Point3d C){	//расчитывает поток излучения через поверхность в виде параллелограмма,
+	public double getRadiantFlux(Plane plane){	//расчитывает поток излучения через поверхность в виде параллелограмма,
 																	 //заданного тремя вершинами (А и C противоположны), от этого источника света (Вт)
 		
 		double radiantFlux = 0;
 		//находим точку пересечения диаганалей параллелограмма, задающего поверхность
-		Point3d planeCenter = new Point3d();
-		planeCenter.add(A, C);
-		planeCenter.scale(.5);
-		
+		Point3d planeCenter = plane.getCenter();
+				
 		if(bounds.intersect(planeCenter)){								//если плоскость в зоне освещения
-			//находим векторы, соответсвующие сторонам параллелограмма
-			Vector3d sideVec1 = new Vector3d();
-			Vector3d sideVec2 = new Vector3d();
-			sideVec1.sub(B, A);
-			sideVec2.sub(C, B);
-			
 			//находим нормаль к плоскости
-			Vector3d norm = new Vector3d();
-			norm.cross(sideVec1, sideVec2);
-			
+			Vector3d norm = plane.getrNorm();
+						
 			//находим вектор луча света
 			Vector3d ray = new Vector3d();
 			ray.sub(planeCenter, source);
@@ -108,7 +99,7 @@ public class Illuminant {
 			double illuminance = (intensity / ray.lengthSquared()) * abs(cos(angle));
 			
 			//находим площадь параллелограмма, пользуясь псевдоскалярным произведением (м^2)
-			double area = sideVec1.length() * sideVec2.length() * sin(sideVec1.angle(sideVec2));
+			double area = plane.getArea();
 			
 			//находим  поток излучения (Вт)
 			double luminousFlux = (illuminance * area) / luminousEfficacy;

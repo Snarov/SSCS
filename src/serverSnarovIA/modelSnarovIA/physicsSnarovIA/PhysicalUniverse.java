@@ -93,6 +93,15 @@ public class PhysicalUniverse {
 	}
 
 	//поведение
+	
+	public synchronized void addPhysBody(String newPhysBodyName, PhysicalBody newPhysBody){
+		physBodies.put(newPhysBodyName, newPhysBody);
+	}
+	
+	public synchronized void addForceField(String newForceFieldName, ForceField newForceField){
+		forceFields.put(newForceFieldName, newForceField);
+	}
+	
 	private synchronized void integrate() {				//в этом методе движок расчитывает, как взаимодействуют объекты
 		for (PhysicalBody physBody : physBodies.values()) {
 			Vector3d resultForce = new Vector3d();

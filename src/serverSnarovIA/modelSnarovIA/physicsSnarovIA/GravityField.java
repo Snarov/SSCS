@@ -39,7 +39,7 @@ public class GravityField extends ForceField {
 	public void setMass(double aMass) {
 		mass = aMass;
 	}
-	
+
 	//поведение
 	@Override
 	public Vector3d forceForPhysicalBody(PhysicalBody physBody) {	//рассчитывает силу притяжения (Н) для указанной точки
@@ -52,17 +52,19 @@ public class GravityField extends ForceField {
 			//расстояние от источника гравитации до мат. точки (м)
 			double distance = getCenter().distance(matPoint);
 
-			//находим направление действия силы
-			Vector3d gravityForceDirection = new Vector3d();
-			gravityForceDirection.sub(getCenter(), matPoint);
-			gravityForceDirection.normalize();
+			if (distance > 0) {
+				//находим направление действия силы
+				Vector3d gravityForceDirection = new Vector3d();
+				gravityForceDirection.sub(getCenter(), matPoint);
+				gravityForceDirection.normalize();
 
-			//модуль вектора силы
-			double force = G * mass * matPoint.getMass() / pow(distance, 2);
+				//модуль вектора силы
+				double force = G * mass * matPoint.getMass() / pow(distance, 2);
 
-			//сама сила
-			gravityForce.set(gravityForceDirection);
-			gravityForce.scale(force);
+				//сама сила
+				gravityForce.set(gravityForceDirection);
+				gravityForce.scale(force);
+			}
 		}
 		return gravityForce;
 	}

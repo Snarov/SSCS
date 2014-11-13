@@ -25,7 +25,7 @@ public class PhysicalUniverse {
 
 		integrationTask = new TimerTask() { //задача для другого потока
 			@Override
-			public void run() { //вызывает метод из внешнего класса (просто чтобы писать не здесь, а ниже)
+			public synchronized void run() { //вызывает метод из внешнего класса (просто чтобы писать не здесь, а ниже)
 				integrate();
 			}
 		};
@@ -127,11 +127,12 @@ public class PhysicalUniverse {
 			
 			physBody.integrate(dT);			//изменить параметры тела
 		}
+		notifyAll();
 	}
 	
 	public void startTime() {		//начинает ход времени
-		stopTime();
-		timer.scheduleAtFixedRate(integrationTask, 0, (long) (dT * timeFactor));	//немедленный запуск задачи с фиксированной частотой исполнения
+		//stopTime();
+		timer.scheduleAtFixedRate(integrationTask, 0, (long) (dT / timeFactor));	//немедленный запуск задачи с фиксированной частотой исполнения
 	}
 	
 	public void stopTime() {			//останавливает ход времени

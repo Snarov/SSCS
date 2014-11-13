@@ -1,5 +1,7 @@
 package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 
+import javax.media.j3d.Transform3D;
+import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
@@ -71,7 +73,7 @@ public class Plane {
 		return planeCenter;
 	}
 
-	public Vector3d getrNorm() {			//находить вектор нормали к плоскости
+	public Vector3d getrNorm() {			//находит вектор нормали к плоскости
 		//находим векторы, соответсвующие сторонам параллелограмма
 		Vector3d sideVec1 = new Vector3d();
 		Vector3d sideVec2 = new Vector3d();
@@ -95,6 +97,16 @@ public class Plane {
 		double area = sideVec1.length() * sideVec2.length() * sin(sideVec1.angle(sideVec2));
 
 		return area;
+	}
+	
+	public void rotate(AxisAngle4d axisAngle){		//вращает плоскость вокруг заданной "углооси"
+		Transform3D rotation = new Transform3D();
+		rotation.setRotation(axisAngle);
+		
+		//вращение каждой точки;
+		rotation.transform(A);
+		rotation.transform(B);
+		rotation.transform(C);
 	}
 
 }

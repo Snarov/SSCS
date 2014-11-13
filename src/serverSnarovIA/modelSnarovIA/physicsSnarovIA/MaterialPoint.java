@@ -102,17 +102,17 @@ public class MaterialPoint extends Point3d {
 
 	public void integrate(long timeMillis) {     //высчитывает состояние объекта через timeMillis миллисекунд,используя метод интегрирования Эйлера
 
-		float timeSeconds = timeMillis / 1000;
+		float timeSeconds = (float)timeMillis / 1000;
 		//интегрируем ускорение и находим допольнительную составляющую скорости
 		Vector3d additionalVelocity = new Vector3d();           //вектор, на который изменится скорость в середине временного интервала
-		additionalVelocity.scale(timeSeconds / 2, acceleration);
+		additionalVelocity.scale(timeSeconds, acceleration);
 		velocity.add(additionalVelocity);                   //скорость в середине временного интервала
 
 		Vector3d offset = new Vector3d();
 		offset.scale(timeSeconds, velocity);             //смещение точки за временной интервал
 		add(offset);
 
-		velocity.add(additionalVelocity);               //скорость точки в конце временного интервала
+		//velocity.add(additionalVelocity);               //скорость точки в конце временного интервала
 	}
 
 }

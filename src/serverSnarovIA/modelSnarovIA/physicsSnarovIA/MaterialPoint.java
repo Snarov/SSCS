@@ -112,7 +112,6 @@ public class MaterialPoint extends Point3d {
 		offset.scale(timeSeconds, velocity);             //смещение точки за временной интервал
 		add(offset);
 
-		//velocity.add(additionalVelocity);               //скорость точки в конце временного интервала
 	}
 
 }

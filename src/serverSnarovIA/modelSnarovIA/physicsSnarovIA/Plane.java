@@ -16,7 +16,7 @@ public class Plane {
 	private final Point3d B = new Point3d();
 	private final Point3d C = new Point3d();
 
-	private double radiantFlux;				//величина светового потока через эту плоскость
+	private double radiantFlux;				//величина потока излучения через эту плоскость (Вт)
 
 	//конструкторы
 	public Plane(Point3d a, Point3d b, Point3d c) {
@@ -73,7 +73,7 @@ public class Plane {
 		return planeCenter;
 	}
 
-	public Vector3d getrNorm() {			//находит вектор нормали к плоскости
+	public Vector3d getNorm() {			//находит вектор нормали к плоскости
 		//находим векторы, соответсвующие сторонам параллелограмма
 		Vector3d sideVec1 = new Vector3d();
 		Vector3d sideVec2 = new Vector3d();
@@ -107,6 +107,12 @@ public class Plane {
 		rotation.transform(A);
 		rotation.transform(B);
 		rotation.transform(C);
+	}
+	
+	public void transfer(Vector3d transferVect){	//перемещает каждую точку пл-ти на указанный вектор
+		A.add(transferVect);
+		B.add(transferVect);
+		C.add(transferVect);
 	}
 
 }

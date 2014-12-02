@@ -13,11 +13,11 @@ public class PhysicalBody {
 	private double radius;											//радиус сферы, имитирующей форму тела
 
 	//конструкторы
-	PhysicalBody(double aRadius) {
+	public PhysicalBody(double aRadius) {
 		radius = aRadius;
 	}
 
-	PhysicalBody(MaterialPoint aCenter, double aRadius) {
+	public PhysicalBody(MaterialPoint aCenter, double aRadius) {
 		this(aRadius);
 		center.set(aCenter);
 	}

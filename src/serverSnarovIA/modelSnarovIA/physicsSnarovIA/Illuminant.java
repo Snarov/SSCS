@@ -69,7 +69,7 @@ public class Illuminant {
 	}
 	
 	public final void setLuminousEfficacy(double aLuminousEfficacy) {	 //если световая эффективность больше,
-																 //чем максимально возможная, то устаннавливается максимально возможная
+																 //чем максимально возможная, то устанавливается максимально возможная
 		if(aLuminousEfficacy > Km)
 			luminousEfficacy = Km;
 		else
@@ -86,7 +86,7 @@ public class Illuminant {
 				
 		if(bounds.intersect(planeCenter)){								//если плоскость в зоне освещения
 			//находим нормаль к плоскости
-			Vector3d norm = plane.getrNorm();
+			Vector3d norm = plane.getNorm();
 						
 			//находим вектор луча света
 			Vector3d ray = new Vector3d();

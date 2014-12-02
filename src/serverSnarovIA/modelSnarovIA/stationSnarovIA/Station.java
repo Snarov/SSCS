@@ -1,7 +1,10 @@
 package serverSnarovIA.modelSnarovIA.stationSnarovIA;
 
+import java.util.*;
 import javax.vecmath.AxisAngle4d;
+import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
+import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalBody;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Plane;
 
@@ -10,10 +13,24 @@ import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Plane;
 public class Station extends PhysicalBody {
 
 	//внутренние классы
+	//имена рабочих устройств станции
+	private enum WorkingDevicesNames {
+
+		LEFT_ENGINE,
+		RIGHT_ENGINE,
+		TOP_ENGINE,
+		BOTTOM_ENGINE,
+		FRONT_ENGINE,
+		BACK_ENGINE,
+		LEFT_SOLAR_PANEL,
+		RIGHT_SOLAR_PANEL,
+		ELECTROLYZER
+	}
+
 	//возможные направления двигателей
 	public enum EngineDir {
 
-		top, bottom, left, right
+		left, right, top, bottom, front, back
 	}
 
 	//двигатель создает тягу, способную изменить направление движения станции
@@ -21,16 +38,17 @@ public class Station extends PhysicalBody {
 		//Константы
 
 		//поля
-		private final Station.EngineDir direction;	//направление выброcа двигателем частиц
+		private final EngineDir direction;	//направление выброcа двигателем частиц
 		private final Vector3d directionVect;		//вектор направления выброcа двигателем частиц
 		private final double maxThrust;				//максимальная тяга двигателя (Н)
+		private final Vector3d currentThrustVect = new Vector3d(); //вектор тяги
 
 		private double currentThrust = 0;			//текущая тяга двигателя (Н)
 		private double thrustValue;					//цена тяги двигателя (Вт/Н)
 		private double workingMassValue;			//расход рабочего тела (кг/Н*с)
 
 		//конструкторы
-		private Engine(Station.EngineDir aDirection, double aMaxThrust, double aThrustValue, double aWorkingMassValue) {
+		private Engine(EngineDir aDirection, double aMaxThrust, double aThrustValue, double aWorkingMassValue) {
 			direction = aDirection;
 			maxThrust = aMaxThrust;
 			thrustValue = aThrustValue;
@@ -52,10 +70,16 @@ public class Station extends PhysicalBody {
 					directionVect = new Vector3d();
 					directionVect.cross(bodyNormal, bodyDirection);
 					break;
+				case front:
+					directionVect = new Vector3d(bodyNormal);
+					break;
+				case back:
+					directionVect = new Vector3d(bodyNormal);
+					directionVect.negate();
+					break;
 				default:
 					directionVect = new Vector3d();
 			}
-
 		}
 
 		//методы доступа и модификации
@@ -89,9 +113,21 @@ public class Station extends PhysicalBody {
 		//поведение
 		@Override
 		public void work(double timeMillis) {					//просчитывает работу двигателя за определенное время
-			//здесь должно быть что то еще
-		}
+			if (currentThrust == 0)
+				return;
 
+			double necessaryWorkingMass = workingMassValue * currentThrust * timeMillis / 1000;	//необходимая масса раб.тела (кг)
+			double necessaryEnergy = thrustValue * currentThrust * timeMillis / 3600000; //необходимая энергия (Вт*ч)
+
+			if (battery.uncharge(necessaryEnergy) && hydrogen.retrieveMater(necessaryWorkingMass)) {	//если хватает энергии и раб. тела
+				if (currentThrustVect.length() != currentThrust) {
+					currentThrustVect.scale(currentThrust, directionVect);
+					currentThrustVect.negate();
+				}
+			} else {
+				currentThrustVect.scale(0);
+			}
+		}
 	}
 
 	//представляет собой электролизер, с помощью энергии аккумулятора проводящий электролиз воды и помещающий его продукты в резервуары
@@ -103,51 +139,55 @@ public class Station extends PhysicalBody {
 		private final double H_MASS_PART = .112;		//массовая доля водорода в воде
 
 		//поля
-		private final double maxCurrent;	//максимальный ток электролиза
+		private final double maxPower;	//максимальная мощность электролиза
 		private final double ECE;			//кпд электролиза
-		private final double voltage;		//напряжение на электродах
-		private double current;				//ток электролиза
+		private double currentPower;		//текущая мощность электролиза
 
 		//конструкторы
-		private Electrolyzer(double aMaxCurrent, double aECE, double aVoltage) {
-			maxCurrent = aMaxCurrent;
+		private Electrolyzer(double aMaxPower, double aECE) {
+			maxPower = aMaxPower;
 			ECE = aECE;
-			voltage = aVoltage;
-
 		}
 
 		//методы доступа и модификации
-		public double getMaxCurrent() {
-			return maxCurrent;
+		public double getMaxPower() {
+			return maxPower;
 		}
 
 		public double getECE() {
 			return ECE;
 		}
 
-		public double getVoltage() {
-			return voltage;
+		public double getCurrentPower() {
+			return currentPower;
 		}
 
-		public double getCurrent() {
-			return current;
-		}
-
-		public void setCurrent(double aCurrent) {
-			current = aCurrent;
+		public void setCurrent(double aCurrentPower) {
+			if (aCurrentPower <= currentPower)
+				currentPower = aCurrentPower;
+			else
+				currentPower = maxPower;
 		}
 
 		//поведение
 		@Override
 		public void work(double timeMillis) {
-			//здесь должно быть что то еще
+			double electrolisisEnergy = currentPower * timeMillis / 1000;	//энергия, необходимая для этого такта электролиза (Дж)
+			double waterMass = electrolisisEnergy / ENERGY_COST;
+			if (battery.uncharge(electrolisisEnergy) && water.retrieveMater(waterMass)) {
+				double waterDecompositionMass = electrolisisEnergy / ENERGY_COST;
+				oxygen.addMater(waterDecompositionMass * O_MASS_PART);
+				hydrogen.addMater(H_MASS_PART);
+			}
 		}
-
 	}
 
 	//солнечная панель для получения электроэнергии от солнца. Представляет прямоугольную панель с приводом для вращения
 	private class SolarPanel implements StationWorkingDevice {
 
+		//константы
+		public final static double LENGHT = 10;		//длина прямоугольника солнечной панели (м)
+		public final static double WIDTH = 3;		//ширина прямоугольника солнечной панели (м)
 		//поля
 		private final double ECE;			//КПД панели
 		private final Plane plane;			//поглащающая плоскость панели
@@ -191,20 +231,20 @@ public class Station extends PhysicalBody {
 		@Override
 		public void work(double timeMillis) {
 			if (currentAngle != targetAngle) {	//если вращение продолжается
-				
+
 				double rotation;
 				if (targetAngle > currentAngle)	//определяем направление вращения
 					rotation = rotateSpeed * (timeMillis / 1000);
 				else
 					rotation = -rotateSpeed * (timeMillis / 1000);
-				
+
+				currentAngle += rotation;
 				AxisAngle4d axisAngle = new AxisAngle4d(axis, rotation);
 				plane.rotate(axisAngle);
 			}
-			
-			double collectedEnergy = plane.getRadiantFlux() * ECE;		//!!!ПОРАБОТАТЬ НАД ПОТОКОБЕЗОПАСНОСТЬЮ!!!
-			
-			//здесь должно быть что то еще
+
+			double collectedEnergy = plane.getRadiantFlux() * ECE * timeMillis / 3600000;	//выделенная из света энергия (Вт*ч)		
+			battery.charge(collectedEnergy);
 		}
 	}
 
@@ -212,8 +252,8 @@ public class Station extends PhysicalBody {
 	private class Battery {
 
 		//поля
-		private final double capacity;	//емкость аккумулятора (А * ч)
-		private double chargeLevel;		//уровень заряда (А * ч)
+		private final double capacity;	//емкость аккумулятора (Вт * ч)
+		private double chargeLevel;		//уровень заряда (Вт * ч)
 
 		//конструкторы
 		private Battery(double aCapacity) {
@@ -240,16 +280,14 @@ public class Station extends PhysicalBody {
 			}
 		}
 
-		public boolean uncharge(double charge) {	//разряжает аккумулятор на указанную величину. вовзращает истинра, если хватило заряда
+		public boolean uncharge(double charge) {	//разряжает аккумулятор на указанную величину. вовзращает истина, если хватило заряда
 			if (chargeLevel - charge < 0)
 				return false;
 			else {
 				chargeLevel -= charge;
 				return true;
 			}
-
 		}
-
 	}
 
 	private class Reservoir {
@@ -292,8 +330,90 @@ public class Station extends PhysicalBody {
 			}
 		}
 	}
+
+	//константы
+	public final static double DIST_TO_PANELS = 8;		//расстояние от центра станции до солнечных панелей
 	//поля
 	private final Vector3d bodyDirection = new Vector3d();	//направление станции (ориентация верхней части)
 	private final Vector3d bodyNormal = new Vector3d();		//нормаль к станции (ориентация фронтальной части)
 
+	private final Battery battery;							// аккумулятор
+	private final Reservoir water;							//емкость с водой
+	private final Reservoir oxygen;							// емкость с кислородом
+	private final Reservoir hydrogen;						// емкость с водородом
+
+	private final HashMap<WorkingDevicesNames, StationWorkingDevice> workingDevices; //активные раб. устройства станции
+
+	public Station(MaterialPoint center, //собирает станциию с заявленными параметрами и помещает ее в пр-ве
+			double radius,
+			Vector3d aBodyDirection,
+			Vector3d aBodyNormal,
+			double batteryCapacity,
+			double waterCapacity,
+			double oxygenCapacity,
+			double hydrogenCapacity,
+			double engineMaxThrust,
+			double engineThrustValue,
+			double engineWorkingMassValue,
+			double solarPanelECE,
+			double solarPanelRotateSpeed,
+			double electrolyzerMaxPower,
+			double electrolyzerECE
+	) {
+		super(center, radius);
+
+		bodyDirection.set(aBodyDirection);
+		bodyNormal.set(aBodyNormal);
+
+		battery = new Battery(batteryCapacity);
+		water = new Reservoir(waterCapacity);
+		oxygen = new Reservoir(oxygenCapacity);
+		hydrogen = new Reservoir(hydrogenCapacity);
+
+		workingDevices = new HashMap<>(WorkingDevicesNames.values().length);
+		for (int i = 0; i < EngineDir.values().length; i++) {
+			workingDevices.put(WorkingDevicesNames.values()[i],
+					new Engine(EngineDir.values()[i], engineMaxThrust, engineThrustValue, engineWorkingMassValue));
+		}
+
+		Vector3d leftSolarPanelAxis = new Vector3d();
+		Vector3d rightSolarPanelAxis = new Vector3d();
+		leftSolarPanelAxis.cross(bodyNormal, bodyDirection);
+		rightSolarPanelAxis.set(leftSolarPanelAxis);
+		rightSolarPanelAxis.negate();
+		Plane leftSolarPanelPlane = new Plane(
+				new Point3d(getCenter().x - DIST_TO_PANELS,
+						getCenter().y - SolarPanel.WIDTH,
+						getCenter().z),
+				new Point3d(getCenter().x - DIST_TO_PANELS,
+						getCenter().y + SolarPanel.WIDTH,
+						getCenter().z),
+				new Point3d(getCenter().x - DIST_TO_PANELS - SolarPanel.LENGHT,
+						getCenter().y + SolarPanel.WIDTH,
+						getCenter().z)
+		);
+		Plane rightSolarPanelPlane = new Plane(
+				new Point3d(getCenter().x + DIST_TO_PANELS,
+						getCenter().y - SolarPanel.WIDTH,
+						getCenter().z),
+				new Point3d(getCenter().x + DIST_TO_PANELS,
+						getCenter().y + SolarPanel.WIDTH,
+						getCenter().z),
+				new Point3d(getCenter().x + DIST_TO_PANELS + SolarPanel.LENGHT,
+						getCenter().y + SolarPanel.WIDTH,
+						getCenter().z)
+		);
+		workingDevices.put(WorkingDevicesNames.LEFT_SOLAR_PANEL, new SolarPanel(
+				solarPanelECE,
+				leftSolarPanelPlane,
+				leftSolarPanelAxis,
+				solarPanelRotateSpeed));
+		workingDevices.put(WorkingDevicesNames.RIGHT_SOLAR_PANEL, new SolarPanel(
+				solarPanelECE,
+				rightSolarPanelPlane,
+				leftSolarPanelAxis,
+				solarPanelRotateSpeed));
+
+		workingDevices.put(WorkingDevicesNames.ELECTROLYZER, new Electrolyzer(electrolyzerMaxPower, electrolyzerECE));
+	}
 }

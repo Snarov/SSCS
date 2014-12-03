@@ -8,13 +8,14 @@ import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalBody;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Plane;
 
+
 //представляет собой упрощенную модель симулируемой космической станции, оборудованной двигателями, аккумулятором,солнечными генераторами,
 //блоком питания, электролизером, резервуаром для водорода.
 public class Station extends PhysicalBody {
 
 	//внутренние классы
 	//имена рабочих устройств станции
-	private enum WorkingDevicesNames {
+	private enum WorkingDeviceName {
 
 		LEFT_ENGINE,
 		RIGHT_ENGINE,
@@ -99,6 +100,10 @@ public class Station extends PhysicalBody {
 			return currentThrust;
 		}
 
+		public Vector3d getCurrentThrustVect() {
+			return currentThrustVect;
+		}
+
 		public double getThrustValue() {
 			return thrustValue;
 		}
@@ -112,7 +117,7 @@ public class Station extends PhysicalBody {
 
 		//поведение
 		@Override
-		public void work(double timeMillis) {					//просчитывает работу двигателя за определенное время
+		public void work(long timeMillis) {					//просчитывает работу двигателя за определенное время
 			if (currentThrust == 0)
 				return;
 
@@ -171,7 +176,7 @@ public class Station extends PhysicalBody {
 
 		//поведение
 		@Override
-		public void work(double timeMillis) {
+		public void work(long timeMillis) {
 			double electrolisisEnergy = currentPower * timeMillis / 1000;	//энергия, необходимая для этого такта электролиза (Дж)
 			double waterMass = electrolisisEnergy / ENERGY_COST;
 			if (battery.uncharge(electrolisisEnergy) && water.retrieveMater(waterMass)) {
@@ -229,7 +234,7 @@ public class Station extends PhysicalBody {
 		}
 
 		@Override
-		public void work(double timeMillis) {
+		public void work(long timeMillis) {
 			if (currentAngle != targetAngle) {	//если вращение продолжается
 
 				double rotation;
@@ -338,11 +343,11 @@ public class Station extends PhysicalBody {
 	private final Vector3d bodyNormal = new Vector3d();		//нормаль к станции (ориентация фронтальной части)
 
 	private final Battery battery;							// аккумулятор
-	private final Reservoir water;							//емкость с водой
+	private final Reservoir water;							// емкость с водой
 	private final Reservoir oxygen;							// емкость с кислородом
 	private final Reservoir hydrogen;						// емкость с водородом
 
-	private final HashMap<WorkingDevicesNames, StationWorkingDevice> workingDevices; //активные раб. устройства станции
+	private final EnumMap<WorkingDeviceName, StationWorkingDevice> workingDevices; //активные раб. устройства станции
 
 	public Station(MaterialPoint center, //собирает станциию с заявленными параметрами и помещает ее в пр-ве
 			double radius,
@@ -370,9 +375,9 @@ public class Station extends PhysicalBody {
 		oxygen = new Reservoir(oxygenCapacity);
 		hydrogen = new Reservoir(hydrogenCapacity);
 
-		workingDevices = new HashMap<>(WorkingDevicesNames.values().length);
+		workingDevices = new EnumMap(WorkingDeviceName.class);
 		for (int i = 0; i < EngineDir.values().length; i++) {
-			workingDevices.put(WorkingDevicesNames.values()[i],
+			workingDevices.put(WorkingDeviceName.values()[i],
 					new Engine(EngineDir.values()[i], engineMaxThrust, engineThrustValue, engineWorkingMassValue));
 		}
 
@@ -403,17 +408,35 @@ public class Station extends PhysicalBody {
 						getCenter().y + SolarPanel.WIDTH,
 						getCenter().z)
 		);
-		workingDevices.put(WorkingDevicesNames.LEFT_SOLAR_PANEL, new SolarPanel(
+		workingDevices.put(WorkingDeviceName.LEFT_SOLAR_PANEL, new SolarPanel(
 				solarPanelECE,
 				leftSolarPanelPlane,
 				leftSolarPanelAxis,
 				solarPanelRotateSpeed));
-		workingDevices.put(WorkingDevicesNames.RIGHT_SOLAR_PANEL, new SolarPanel(
+		workingDevices.put(WorkingDeviceName.RIGHT_SOLAR_PANEL, new SolarPanel(
 				solarPanelECE,
 				rightSolarPanelPlane,
 				leftSolarPanelAxis,
 				solarPanelRotateSpeed));
+		setPlanes(new ArrayList<Plane>() {
+			{
+				add(leftSolarPanelPlane);
+				add(rightSolarPanelPlane);
+			}
+		}
+		);
 
-		workingDevices.put(WorkingDevicesNames.ELECTROLYZER, new Electrolyzer(electrolyzerMaxPower, electrolyzerECE));
+		workingDevices.put(WorkingDeviceName.ELECTROLYZER, new Electrolyzer(electrolyzerMaxPower, electrolyzerECE));
+	}
+
+	@Override
+	public void integrate(long timeMillis) {		//просчитывает изменение состояния станции
+		workingDevices.forEach((key, value) -> {
+			value.work(timeMillis);
+			if (key.compareTo(WorkingDeviceName.BACK_ENGINE) <= 0)	//если устройство - двигатель
+				getCenter().addForce(((Engine) value).getCurrentThrustVect());	//то склдываем его тягу с силами, действующми на физ.тело
+		});
+		
+		super.integrate(timeMillis);			//производим расчет состояния станции как физ. тела
 	}
 }

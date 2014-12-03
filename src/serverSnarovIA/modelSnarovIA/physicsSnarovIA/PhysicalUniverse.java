@@ -113,7 +113,7 @@ public class PhysicalUniverse {
 					resultForce.add(anotherForce);
 			}
 			
-			physBody.getCenter().setForce(resultForce);
+			physBody.setForce(resultForce);
 			
 			for (Plane plane : physBody.getPlanes()) {		//расчитываем световой поток через каждую плоскость
 				double resultFlux = 0;

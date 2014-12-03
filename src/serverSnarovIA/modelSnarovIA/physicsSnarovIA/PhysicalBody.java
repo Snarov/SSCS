@@ -1,6 +1,7 @@
 package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 
 import java.util.*;
+import javax.vecmath.Vector3d;
 
 //простейшее представление физического тела: сфера с центром, в котором сосредоточена масса тела
 public class PhysicalBody {
@@ -49,8 +50,14 @@ public class PhysicalBody {
 	}
 
 	//поведение
+	public void setForce(Vector3d force){		//устанавливает силу, действующую на точку, являющуюся центром масс тела
+		center.setForce(force);
+	}
+	
 	public void integrate(long timeMillis) {
-		center.integrate(timeMillis);			//перенаправление вызова в обволакиваемый объект - центр масс
+		Vector3d bodyOffset = center.integrate(timeMillis);			//перенаправление вызова в обволакиваемый объект - центр масс
+		for(Plane plane : planes)
+			plane.transfer(bodyOffset);
 	}
 
 }

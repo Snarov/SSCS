@@ -38,7 +38,7 @@ public class Plane {
 		return C;
 	}
 
-	synchronized public double getRadiantFlux() {
+	public double getRadiantFlux() {
 		return radiantFlux;
 	}
 
@@ -54,7 +54,7 @@ public class Plane {
 		C.set(c);
 	}
 
-	synchronized public void setRadiantFlux(double aRadiantFlux) {
+	public void setRadiantFlux(double aRadiantFlux) {
 		radiantFlux = aRadiantFlux;
 	}
 

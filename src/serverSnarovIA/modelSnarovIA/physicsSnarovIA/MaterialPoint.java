@@ -100,7 +100,8 @@ public class MaterialPoint extends Point3d {
 		acceleration.scale(1 / mass, additionalForce);                  //и задает вектор ускорения
 	}
 
-	public void integrate(long timeMillis) {     //высчитывает состояние объекта через timeMillis миллисекунд,используя метод интегрирования Эйлера
+	public Vector3d integrate(long timeMillis) {     //высчитывает состояние объекта через timeMillis миллисекунд,используя метод интегрирования Эйлера
+				//возвращает вектор перемещения мат. точки (как едиснтвенный результат работы методы)
 
 		float timeSeconds = (float)timeMillis / 1000;
 		//интегрируем ускорение и находим допольнительную составляющую скорости
@@ -111,7 +112,6 @@ public class MaterialPoint extends Point3d {
 		Vector3d offset = new Vector3d();
 		offset.scale(timeSeconds, velocity);             //смещение точки за временной интервал
 		add(offset);
-
+		return offset;
 	}
-
 }

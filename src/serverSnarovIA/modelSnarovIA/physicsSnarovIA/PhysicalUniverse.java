@@ -1,12 +1,13 @@
 package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import javax.vecmath.Vector3d;
 
 //представляет собой контейнер для физических тел и силовых полей. Обеспечивает их взаимодействие в пр-ве.
 //почти потокобезопасный
-public class PhysicalUniverse {
+public class PhysicalUniverse implements Serializable{
 
 	//поля
 	private final ConcurrentHashMap<String, PhysicalBody> physBodies = new ConcurrentHashMap<>();		//список всех объектов в пр-ве
@@ -125,14 +126,14 @@ public class PhysicalUniverse {
 				plane.setRadiantFlux(resultFlux);
 			}
 			
-			physBody.integrate(dT);			//изменить параметры тела
+			physBody.integrate((long) (dT * timeFactor));			//изменить параметры тела
 		}
 		notifyAll();
 	}
 	
 	public void startTime() {		//начинает ход времени
 		//stopTime();
-		timer.scheduleAtFixedRate(integrationTask, 0, (long) (dT / timeFactor));	//немедленный запуск задачи с фиксированной частотой исполнения
+		timer.scheduleAtFixedRate(integrationTask, 0, dT);	//немедленный запуск задачи с фиксированной частотой исполнения
 	}
 	
 	public void stopTime() {			//останавливает ход времени

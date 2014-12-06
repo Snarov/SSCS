@@ -5,7 +5,7 @@ import javax.vecmath.Vector3d;
 
 //материальная точка представляет собой точку центра масс тела в трехмерном евклидовом пространстве
 //реализует поведение инертной точки в реальном мире
-public class MaterialPoint extends Point3d {
+public class MaterialPoint extends Point3d{
 
 	//поля
 	private double mass = 1;                                  //масса (кг)
@@ -57,7 +57,7 @@ public class MaterialPoint extends Point3d {
 		return mass;
 	}
 
-	public void setMass(float aMass) {
+	public void setMass(double aMass) {
 		mass = aMass;
 	}
 

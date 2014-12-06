@@ -8,7 +8,6 @@ import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalBody;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Plane;
 
-
 //представляет собой упрощенную модель симулируемой космической станции, оборудованной двигателями, аккумулятором,солнечными генераторами,
 //блоком питания, электролизером, резервуаром для водорода.
 public class Station extends PhysicalBody {
@@ -338,9 +337,25 @@ public class Station extends PhysicalBody {
 
 	//константы
 	public final static double DIST_TO_PANELS = 8;		//расстояние от центра станции до солнечных панелей
+
+	//дефолтные значения параметров станции (корректировка в дебаге )
+	public final static double RADIUS = 18;
+	public final static double MASS = 30000;
+	public final static double BATTERY_CAPACITY = 100;
+	public final static double WATER_CAPACITY = 5000;
+	public final static double OXYGEN_CAPACITY = 10;
+	public final static double HYDROGEN_CAPACITY = 5;
+	public final static double ENGINE_MAX_THRUST = 1000;
+	public final static double ENGINE_THRUST_VALUE = 1;
+	public final static double ENGINE_WORKING_MASS_VALUE = 1;
+	public final static double SOLAR_PANEL_ECE = 0.5;
+	public final static double SOLAR_PANEL_ROTATE_SPEED = 1;
+	public final static double ELECTROLYZER_MAX_POWER = 1000;
+	public final static double ELECTORLYZER_ECE = 0.5;
+
 	//поля
-	private final Vector3d bodyDirection = new Vector3d();	//направление станции (ориентация верхней части)
-	private final Vector3d bodyNormal = new Vector3d();		//нормаль к станции (ориентация фронтальной части)
+	private final Vector3d bodyDirection = new Vector3d(0, 1, 0);	//направление станции (ориентация верхней части)
+	private final Vector3d bodyNormal = new Vector3d(0, 0, 1);		//нормаль к станции (ориентация фронтальной части)
 
 	private final Battery battery;							// аккумулятор
 	private final Reservoir water;							// емкость с водой
@@ -349,10 +364,8 @@ public class Station extends PhysicalBody {
 
 	private final EnumMap<WorkingDeviceName, StationWorkingDevice> workingDevices; //активные раб. устройства станции
 
-	public Station(MaterialPoint center, //собирает станциию с заявленными параметрами и помещает ее в пр-ве
-			double radius,
-			Vector3d aBodyDirection,
-			Vector3d aBodyNormal,
+	public Station(
+			MaterialPoint center, //собирает станциию с заявленными параметрами и помещает ее в пр-ве
 			double batteryCapacity,
 			double waterCapacity,
 			double oxygenCapacity,
@@ -365,17 +378,18 @@ public class Station extends PhysicalBody {
 			double electrolyzerMaxPower,
 			double electrolyzerECE
 	) {
-		super(center, radius);
+		super(center, RADIUS, MASS);
 
-		bodyDirection.set(aBodyDirection);
-		bodyNormal.set(aBodyNormal);
-
-		battery = new Battery(batteryCapacity);
-		water = new Reservoir(waterCapacity);
-		oxygen = new Reservoir(oxygenCapacity);
-		hydrogen = new Reservoir(hydrogenCapacity);
+		battery = new Battery(batteryCapacity > 0 ? batteryCapacity : BATTERY_CAPACITY);
+		water = new Reservoir(waterCapacity > 0 ? waterCapacity : WATER_CAPACITY);
+		oxygen = new Reservoir(oxygenCapacity > 0 ? oxygenCapacity : OXYGEN_CAPACITY);
+		hydrogen = new Reservoir(hydrogenCapacity > 0 ? hydrogenCapacity : HYDROGEN_CAPACITY);
 
 		workingDevices = new EnumMap(WorkingDeviceName.class);
+
+		engineMaxThrust = engineMaxThrust > 0 ? engineMaxThrust : ENGINE_MAX_THRUST;
+		engineThrustValue = engineThrustValue > 0 ? engineThrustValue : ENGINE_THRUST_VALUE;
+		engineWorkingMassValue = engineWorkingMassValue > 0 ? engineWorkingMassValue : ENGINE_WORKING_MASS_VALUE;
 		for (int i = 0; i < EngineDir.values().length; i++) {
 			workingDevices.put(WorkingDeviceName.values()[i],
 					new Engine(EngineDir.values()[i], engineMaxThrust, engineThrustValue, engineWorkingMassValue));
@@ -408,6 +422,8 @@ public class Station extends PhysicalBody {
 						getCenter().y + SolarPanel.WIDTH,
 						getCenter().z)
 		);
+		solarPanelECE = solarPanelECE > 0 ? solarPanelECE : SOLAR_PANEL_ECE;
+		solarPanelRotateSpeed = solarPanelRotateSpeed > 0 ? solarPanelRotateSpeed : SOLAR_PANEL_ROTATE_SPEED;
 		workingDevices.put(WorkingDeviceName.LEFT_SOLAR_PANEL, new SolarPanel(
 				solarPanelECE,
 				leftSolarPanelPlane,
@@ -426,7 +442,9 @@ public class Station extends PhysicalBody {
 		}
 		);
 
-		workingDevices.put(WorkingDeviceName.ELECTROLYZER, new Electrolyzer(electrolyzerMaxPower, electrolyzerECE));
+		workingDevices.put(WorkingDeviceName.ELECTROLYZER, new Electrolyzer(
+				electrolyzerMaxPower > 0 ? electrolyzerMaxPower : ELECTROLYZER_MAX_POWER,
+				electrolyzerECE > 0 ? electrolyzerECE : ELECTORLYZER_ECE));
 	}
 
 	@Override
@@ -436,7 +454,7 @@ public class Station extends PhysicalBody {
 			if (key.compareTo(WorkingDeviceName.BACK_ENGINE) <= 0)	//если устройство - двигатель
 				getCenter().addForce(((Engine) value).getCurrentThrustVect());	//то склдываем его тягу с силами, действующми на физ.тело
 		});
-		
+
 		super.integrate(timeMillis);			//производим расчет состояния станции как физ. тела
 	}
 }

@@ -6,8 +6,9 @@ import javax.media.j3d.BoundingSphere;
 import javax.vecmath.Point3d;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Vector3d;
+import java.io.*;
 
-public abstract class ForceField {
+public abstract class ForceField implements Serializable{
 	
 	//поля
 	private final Point3d center = new Point3d();				  //координаты источника силы (центр поля)

@@ -3,11 +3,12 @@ package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 import javax.vecmath.Point3d;
 import javax.media.j3d.BoundingSphere;
 import javax.vecmath.Vector3d;
+import java.io.*;
 import static java.lang.Math.*;
 
 //представляет собой точечный источник света с заданной силой света,
 //свечение которого распространяется внутри ограничивающей сферы
-public class Illuminant {
+public class Illuminant implements Serializable{
 
 	//константы
 	private final static double Km = 683;		//максимальное значение спектральной световой эффективности монохроматического излучения(лм/Вт)

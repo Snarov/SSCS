@@ -11,23 +11,29 @@ import static java.lang.Math.pow;
 public class GravityField extends ForceField {
 
 	//константы
-	private final static float G = 6.67545E-11f;				  //гравитационная постоянная (м3·с−2·кг−1)
+	private final static double GRAVITY_FIELD_RADIUS = 30000000;	  //радиус поля по умолчанию (м)
+	private final static double G = 6.67545E-11f;					//гравитационная постоянная (м3·с−2·кг−1)
 
 	//поля
-	private double mass;										  //масса, создающая гравитацию (кг)
+	private double mass = 5.972E24;										  //масса, создающая гравитацию (кг)
 
 	//конструкторы
-	GravityField(double aMass, BoundingSphere aBounds) {
+	public GravityField(double aMass, BoundingSphere aBounds) {
 		super(aBounds);
+
+		if (getBounds().getRadius() <= 0)
+			getBounds().setRadius(GRAVITY_FIELD_RADIUS);
+		if (aMass > 0)
+
 		mass = aMass;
 	}
 
-	GravityField(double aMass, Point3d aCenter, BoundingSphere aBounds) {
+	public GravityField(double aMass, Point3d aCenter, BoundingSphere aBounds) {
 		this(aMass, aBounds);
 		setCenter(aCenter);
 	}
 
-	GravityField(double aMass, Point3d aCenter, Point3d boundsCenter, double boundsRadius) {
+	public GravityField(double aMass, Point3d aCenter, Point3d boundsCenter, double boundsRadius) {
 		this(aMass, aCenter, new BoundingSphere(boundsCenter, boundsRadius));
 	}
 

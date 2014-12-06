@@ -11,19 +11,25 @@ public class Atmosphere extends ForceField {
 
 	//константы
 	private static final double R = 8.31447;						//универсальная газовая постоянная
+	private static final double EXTERNAL_BOUNDS_RADUIS = 7400000;	//дефолтная внешняя граница атмосферы
+	private static final double INTERNAL_BOUNDS_RADUIS = 6400000;	//дефолтная внутреняя граница атмосферы
 
 	//поля
 	private final BoundingSphere internalBounds = new BoundingSphere();			//граница внутренней сферы атмосферы,на поверхности лежат точки нулевой высоты
 
 	private double g = 9.81;									//ускоронеие свободного падения (м/с^2)
-	private double tempLapseRate = 0.0065;								//скорость падения температуры (К/м)
-	private double baseTemperature = 273;									//температура на нулевой высоте (К)
-	private double basePressure = 100000;								//давление на нулевой высоте (Па)
-	private double molarMass = 0.0289644;							//молярная масса атмосферного газа (кг/моль)
+	private double tempLapseRate = 0.0065;						//скорость падения температуры (К/м)
+	private double baseTemperature = 273;						//температура на нулевой высоте (К)
+	private double basePressure = 100000;						//давление на нулевой высоте (Па)
+	private double molarMass = 0.0289644;						//молярная масса атмосферного газа (кг/моль)
 
 	//конструкторы
 	public Atmosphere(BoundingSphere externalBounds, BoundingSphere aInternalBounds) {
 		super(externalBounds);
+		if (getBounds().getRadius() <= 0)
+			getBounds().setRadius(EXTERNAL_BOUNDS_RADUIS);
+		if (aInternalBounds.getRadius() <= 0)
+			aInternalBounds.setRadius(INTERNAL_BOUNDS_RADUIS);
 		internalBounds.set(aInternalBounds);
 	}
 
@@ -31,11 +37,16 @@ public class Atmosphere extends ForceField {
 			double aG, double aBasePressure, double aTemperature, double aMolarMass) {
 		this(externalBounds, aInternalBounds);
 
-		tempLapseRate = aTempLapseRate;
-		g = aG;
-		basePressure = aBasePressure;
-		baseTemperature = aTemperature;
-		molarMass = aMolarMass;
+		if (aTempLapseRate > 0)
+			tempLapseRate = aTempLapseRate;
+		if (aG > 0)
+			g = aG;
+		if (aBasePressure > 0)
+			basePressure = aBasePressure;
+		if (aTemperature > 0)
+			baseTemperature = aTemperature;
+		if (aMolarMass > 0)
+			molarMass = aMolarMass;
 	}
 
 	//методы доступа и модификации

@@ -1,10 +1,11 @@
 package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 
+import java.io.*;
 import java.util.*;
 import javax.vecmath.Vector3d;
 
 //простейшее представление физического тела: сфера с центром, в котором сосредоточена масса тела
-public class PhysicalBody {
+public class PhysicalBody implements Serializable{
 
 	//константы
 	public static final double DRAG_COEFFICIENT = 0.47;				//коффициент сопротивления формы для сферы
@@ -18,9 +19,10 @@ public class PhysicalBody {
 		radius = aRadius;
 	}
 
-	public PhysicalBody(MaterialPoint aCenter, double aRadius) {
+	public PhysicalBody(MaterialPoint aCenter, double aRadius, double mass) {
 		this(aRadius);
 		center.set(aCenter);
+		center.setMass(mass);
 	}
 
 	//методы доступа и модификации

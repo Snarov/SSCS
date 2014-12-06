@@ -4,12 +4,13 @@ import javax.media.j3d.Transform3D;
 import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
+import java.io.*;
 
 import static java.lang.Math.sin;
 
 //представляет собой плоскую поверхность в виде параллелограмма, заданного тремя точками в пространстве (А и С противоположны)
 //единственная роль - имитация светового потока через поверхность
-public class Plane {
+public class Plane implements Serializable{
 
 	//поля
 	private final Point3d A = new Point3d();

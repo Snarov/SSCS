@@ -1,25 +1,24 @@
 package serverSnarovIA;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
 //класс для получения конфигураций из конфигурационного файла
-public class Configurator {
+public class ConfReader {
 
 	//константы
 	private static final String FILE_READ_ERR_MSG = "Warning: Файл конфигурации не может быть прочитан."
 			+ " Работа будет продолжена с параметрами по умолчанию";
-	private static final String PATTERN_STRING = "\\w+\\s*=\\s*\\d+";	//паттерн поля конфигурации в файле
+	private static final String PATTERN_STRING = "\\w+\\s*=\\s*\\d+[Ee.]?\\d*";	//паттерн поля конфигурации в файле
 	//поля
 	private final File file;											//имя файла конфигурации	
-	private final HashMap<String, String> confFields = new HashMap<>(); //Отображение полей конфигурации. ключ - имя поля
+	private final HashMap<String, Double> confFields = new HashMap<>(); //Отображение полей конфигурации. ключ - имя поля
 
 	//конструкторы
-	public Configurator(String fileName) {
+	public ConfReader(String fileName) {
 		file = new File(fileName);
 
 		char[] cbuf = new char[(int) file.length()];
@@ -48,10 +47,17 @@ public class Configurator {
 				int assignSymbIndex = fileString.indexOf("=");
 
 				String key = fileString.substring(0, fileString.indexOf("="));
-				key = key.toLowerCase();
-				String value = fileString.substring(assignSymbIndex + 1);
-				confFields.put(key, value);
+				key = key.toUpperCase();
+				String valueStr = fileString.substring(assignSymbIndex + 1);
+				Double valueD = new Double(valueStr);
+				confFields.put(key, valueD);
 			}
 		}
+	}
+	
+	//поведение
+	public double getConfValue(String key){
+		Double retvalObj  = confFields.get(key);
+		return retvalObj == null ?  0 :  retvalObj;
 	}
 }

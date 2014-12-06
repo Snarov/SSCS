@@ -7,6 +7,7 @@ import javax.media.j3d.BoundingSphere;
 import javax.vecmath.Point3d;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Atmosphere;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.GravityField;
+import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Illuminant;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalUniverse;
 import serverSnarovIA.modelSnarovIA.stationSnarovIA.Station;
@@ -30,12 +31,14 @@ public class Server {
 	static {
 		//опция -p value назначает номер порта
 		cmdArgActions.put("-p", (value) -> {
-			if (value == null)
+			if (value == null) {
 				return;
+			}
 			try {
 				port = Integer.parseUnsignedInt(value);
-				if (port > 65535)
+				if (port > 65535) {
 					throw new NumberFormatException();
+				}
 			} catch (NumberFormatException exc) {
 				System.err.println("Номер порта указан неверно.");
 				System.exit(126);
@@ -44,8 +47,9 @@ public class Server {
 
 		//опция -pwd value устанавливает пароль для подключения
 		cmdArgActions.put("-pwd", (value) -> {
-			if (value == null)
+			if (value == null) {
 				return;
+			}
 			byte[] notEncPassword = value.getBytes();
 			try {
 				MessageDigest md = MessageDigest.getInstance(HASH_ALG);
@@ -62,8 +66,9 @@ public class Server {
 
 		//опция -fr value задает квант времени (время кадра)
 		cmdArgActions.put("-fr", (value) -> {
-			if (value == null)
+			if (value == null) {
 				return;
+			}
 			try {
 				frameRate = Integer.parseUnsignedInt(value);
 			} catch (NumberFormatException exc) {
@@ -74,12 +79,13 @@ public class Server {
 
 		//опция -sp value задает директорию сохранения состояния вселенной
 		cmdArgActions.put("-sp", (value) -> {
-			if (value == null)
+			if (value == null) {
 				return;
+			}
 			File testDir = new File(value);
 			if (testDir.isDirectory()) {
 				saveDir = value;
-			}else{
+			} else {
 				System.err.println("Неверная директория сохранений");
 				System.exit(126);
 			}
@@ -94,8 +100,9 @@ public class Server {
 	public static void main(String[] args) {
 		//разбор аргументов командной строки
 		for (int i = 0; i < args.length; i++) {
-			if (cmdArgActions.containsKey(args[i]))
+			if (cmdArgActions.containsKey(args[i])) {
 				cmdArgActions.get(args[i]).process(++i < args.length ? args[i] : null);
+			}
 		}
 
 		//чтение файла конфигурации
@@ -123,6 +130,9 @@ public class Server {
 		double atmBasePressure = confReader.getConfValue("ATM_BASE_PRESSURE");
 		double atmTemperature = confReader.getConfValue("ATM_TEMPERATURE");
 		double atmMolarMass = confReader.getConfValue("ATM_MOLAR_MASS");
+		double sunIntensity = confReader.getConfValue("SUN_INTENSITY");
+		double sunLuminousEfficacy = confReader.getConfValue("SUN_LUMINOUS_EFFICACY");
+		double sunDistance = confReader.getConfValue("SUN_DISTANCE");
 
 		//создание и заполнение виртуальной вселенной
 		PhysicalUniverse physicalUniverse = new PhysicalUniverse(frameRate, 1);
@@ -157,11 +167,25 @@ public class Server {
 				atmMolarMass
 		);
 
+		Point3d sunCoords = new Point3d(0, 0, 1);
+		sunCoords.scale(sunDistance > 0 ? sunDistance : Illuminant.AU);
+		Illuminant sun = new Illuminant(
+				sunIntensity,
+				sunLuminousEfficacy,
+				new BoundingSphere(sunCoords, Illuminant.BOUNDS_RADIUS),
+				sunCoords
+		);
+		
 		physicalUniverse.addForceField("EARTH_GRAVITY", earthGravity);
 		physicalUniverse.addForceField("EARTH_ATMOSPHERE", earthAtmosphere);
 		physicalUniverse.addPhysBody("STATION", station);
+		physicalUniverse.addLightSource("SUN", sun);
 
 		//инициализация демона-сохраняльщика
 		UniverseStateSaverDaemon saverDaemon = new UniverseStateSaverDaemon(physicalUniverse, saveDir);
+
+		//запуск движка и демона-сохраняльщика
+		physicalUniverse.startTime();
+		saverDaemon.start();
 	}
 }

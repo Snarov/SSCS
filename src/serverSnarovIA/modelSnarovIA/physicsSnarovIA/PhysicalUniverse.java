@@ -103,6 +103,10 @@ public class PhysicalUniverse implements Serializable{
 		forceFields.put(newForceFieldName, newForceField);
 	}
 	
+	public synchronized void addLightSource(String newLightSourceName, Illuminant newLightSource){
+		lightSources.put(newLightSourceName, newLightSource);
+	}
+	
 	private synchronized void integrate() {				//в этом методе движок расчитывает, как взаимодействуют объекты
 		for (PhysicalBody physBody : physBodies.values()) {
 			Vector3d resultForce = new Vector3d();

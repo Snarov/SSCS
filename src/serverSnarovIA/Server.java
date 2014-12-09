@@ -2,8 +2,9 @@ package serverSnarovIA;
 
 import java.util.*;
 import java.io.File;
-import java.security.*;
+import java.io.IOException;
 import javax.media.j3d.BoundingSphere;
+import java.util.regex.*;
 import javax.vecmath.Point3d;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Atmosphere;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.GravityField;
@@ -11,20 +12,23 @@ import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Illuminant;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalUniverse;
 import serverSnarovIA.modelSnarovIA.stationSnarovIA.Station;
+import java.net.*;
+
 
 //основной класс содержащий точку входа в приложение. Отвечает за конфигурацию модели станции, 
 //инициализацию виртуального мира и его  загрузку и сохранение и ответ на подключение клиента для передачи ему информации
 public class Server {
 
 	//константы
+	private static final String CLIENT_CONNECTED_MSG = "%s connected";
 	private static final String CONF_FILE_NAME = "/home/snarov/NetBeansProjects/SSCS/SSCS.conf";
-	private static final String HASH_ALG = "MD5";		//алгоритм шифрования пароля
+
 	//поля
-	private static boolean restart = false;			//инициализируется ли виртуальная вселенная заново
-	private static int port = 1488;					//порт, на котором работает сервер
-	private static byte[] password;					//шифрованный пароль подключения
-	private static long frameRate = 33;				//время кадра (мс)
-	private static String saveDir = null;			//директория с сохранениями 
+	private static boolean restart = false;								//инициализируется ли виртуальная вселенная заново
+	private static int port = 1488;										//порт, на котором работает сервер
+	private static final Password password = new Password();			//шифрованный пароль подключения
+	private static long frameRate = 33;									//время кадра (мс)
+	private static String saveDir = null;								//директория с сохранениями 
 	private static final HashMap<String, CmdArgAction> cmdArgActions = new HashMap<>();	// отображение имен аргументов командной строки на соотв. действия
 
 	//блок инициализации отображения задает связи между командами и их обработчиками
@@ -50,17 +54,12 @@ public class Server {
 			if (value == null) {
 				return;
 			}
-			byte[] notEncPassword = value.getBytes();
-			try {
-				MessageDigest md = MessageDigest.getInstance(HASH_ALG);
-				md.reset();
-				md.update(notEncPassword);
-				password = md.digest();
-			} catch (NoSuchAlgorithmException exc) {
-				System.err.println(exc.getMessage());
+			if (!Pattern.matches(Password.PWD_PATTERN, value)) {
+				System.err.println("Некорректный формат пароля");
 				System.exit(126);
-			} finally {
-				Arrays.fill(notEncPassword, (byte) 0);
+			}
+			if (!password.setPassword(value)) {
+				System.exit(126);
 			}
 		});
 
@@ -175,7 +174,7 @@ public class Server {
 				new BoundingSphere(sunCoords, Illuminant.BOUNDS_RADIUS),
 				sunCoords
 		);
-		
+
 		physicalUniverse.addForceField("EARTH_GRAVITY", earthGravity);
 		physicalUniverse.addForceField("EARTH_ATMOSPHERE", earthAtmosphere);
 		physicalUniverse.addPhysBody("STATION", station);
@@ -187,5 +186,27 @@ public class Server {
 		//запуск движка и демона-сохраняльщика
 		physicalUniverse.startTime();
 		saverDaemon.start();
+
+		//ожидание авторизации со стороны клиента
+		try (ServerSocket serverSocket = new ServerSocket(port, 1)) {	//слушающий сокет для 1 входящего соединения
+			while (true) {
+				Socket authSocket = serverSocket.accept();				//получение оконечной точки сетевого соединения с клиентом для проверки пароля
+				Scanner scanner = new Scanner(authSocket.getInputStream());
+
+				while (!scanner.hasNext(Password.PWD_PATTERN));			//ожидание передачи пароля от клиента
+
+				String clientPassword;
+				do {														//пока не будет введен верный пароль
+					clientPassword = scanner.next(Password.PWD_PATTERN);
+				} while (!password.comparePass(clientPassword));
+
+				System.out.println(String.format(CLIENT_CONNECTED_MSG, authSocket.getInetAddress()));	//вывод строки подключенияв
+				
+				authSocket.getOutputStream().write((int) '\06');		//послать клиенту ACK (подтверждение)
+				authSocket.close();
+			}
+		} catch (IOException ex) {
+			System.err.println(ex);
+		}
 	}
 }

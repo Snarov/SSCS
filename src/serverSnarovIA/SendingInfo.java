@@ -1,6 +1,8 @@
 package serverSnarovIA;
 
+import java.io.Serializable;
 
-public interface SendingInfo extends Serialazible{
-	
+//экземпляры классов, реализующих этот интерфейс, отправляются клиенту в качестве датаграмм
+public interface SendingInfo extends Serializable{
+	void refresh();			//обновить информацию
 }

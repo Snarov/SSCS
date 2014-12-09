@@ -138,6 +138,7 @@ public class Server {
 
 		MaterialPoint center = new MaterialPoint(0, 0, 1);
 		center.scale(altitude);
+		
 		Station station = new Station(
 				center,
 				batteryCapacity,
@@ -150,7 +151,8 @@ public class Server {
 				solarPanelECE,
 				solarPanelRotateSpeed,
 				electrolyzerMaxPower,
-				electrolyzerECE
+				electrolyzerECE,
+				new Point3d()
 		);
 
 		GravityField earthGravity = new GravityField(earthMass, new BoundingSphere(new Point3d(), gravityFieldRadius));

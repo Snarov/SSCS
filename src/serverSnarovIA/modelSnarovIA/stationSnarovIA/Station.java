@@ -33,6 +33,41 @@ public class Station extends PhysicalBody {
 		left, right, top, bottom, front, back
 	}
 
+	//панель приборов станции. Ответственна за расчет параметров и их предоставление. что-то типа прокси-класса для доступа к состоянию внутр обхектов
+	public class Panel {
+
+		//поля
+		private final Point3d planetCoords;			//координаты планеты, на орбите которой находится станция
+
+		//конструкторы
+		public Panel(Point3d aPlanetCoords) {
+			planetCoords = aPlanetCoords;
+		}
+
+		//поведение
+		public double getAltitude(){
+			//добавить расчет высоты
+			return 0;
+		}
+		
+		public double getSpeed(){
+			//добавить расчет скорости
+			return 0;
+		}
+		
+		public double getOxygenLevel(){
+			return oxygen.getCurrentReserve();
+		}
+		
+		public double getHydrogenLevel(){
+			return hydrogen.getCurrentReserve();
+		}
+		
+		public double getBatteryLevel(){
+			return battery.getChargeLevel();
+		}
+	}
+
 	//двигатель создает тягу, способную изменить направление движения станции
 	private class Engine implements StationWorkingDevice {
 		//Константы
@@ -108,17 +143,19 @@ public class Station extends PhysicalBody {
 		}
 
 		public void setCurrentThrust(double aCurrentThrust) {
-			if (aCurrentThrust <= maxThrust)
+			if (aCurrentThrust <= maxThrust) {
 				currentThrust = aCurrentThrust;
-			else
+			} else {
 				currentThrust = maxThrust;
+			}
 		}
 
 		//поведение
 		@Override
 		public void work(long timeMillis) {					//просчитывает работу двигателя за определенное время
-			if (currentThrust == 0)
+			if (currentThrust == 0) {
 				return;
+			}
 
 			double necessaryWorkingMass = workingMassValue * currentThrust * timeMillis / 1000;	//необходимая масса раб.тела (кг)
 			double necessaryEnergy = thrustValue * currentThrust * timeMillis / 3600000; //необходимая энергия (Вт*ч)
@@ -167,10 +204,11 @@ public class Station extends PhysicalBody {
 		}
 
 		public void setCurrent(double aCurrentPower) {
-			if (aCurrentPower <= currentPower)
+			if (aCurrentPower <= currentPower) {
 				currentPower = aCurrentPower;
-			else
+			} else {
 				currentPower = maxPower;
+			}
 		}
 
 		//поведение
@@ -237,10 +275,12 @@ public class Station extends PhysicalBody {
 			if (currentAngle != targetAngle) {	//если вращение продолжается
 
 				double rotation;
-				if (targetAngle > currentAngle)	//определяем направление вращения
+				if (targetAngle > currentAngle) //определяем направление вращения
+				{
 					rotation = rotateSpeed * (timeMillis / 1000);
-				else
+				} else {
 					rotation = -rotateSpeed * (timeMillis / 1000);
+				}
 
 				currentAngle += rotation;
 				AxisAngle4d axisAngle = new AxisAngle4d(axis, rotation);
@@ -285,9 +325,9 @@ public class Station extends PhysicalBody {
 		}
 
 		public boolean uncharge(double charge) {	//разряжает аккумулятор на указанную величину. вовзращает истина, если хватило заряда
-			if (chargeLevel - charge < 0)
+			if (chargeLevel - charge < 0) {
 				return false;
-			else {
+			} else {
 				chargeLevel -= charge;
 				return true;
 			}
@@ -326,9 +366,9 @@ public class Station extends PhysicalBody {
 		}
 
 		public boolean retrieveMater(double mass) {	//извлечь определенную массу(кг) в-ва. Истина если его хватило.
-			if (currentReserve - mass < 0)
+			if (currentReserve - mass < 0) {
 				return false;
-			else {
+			} else {
 				currentReserve -= mass;
 				return true;
 			}
@@ -361,6 +401,8 @@ public class Station extends PhysicalBody {
 	private final Reservoir water;							// емкость с водой
 	private final Reservoir oxygen;							// емкость с кислородом
 	private final Reservoir hydrogen;						// емкость с водородом
+	
+	private final Panel panel;
 
 	private final EnumMap<WorkingDeviceName, StationWorkingDevice> workingDevices; //активные раб. устройства станции
 
@@ -376,7 +418,8 @@ public class Station extends PhysicalBody {
 			double solarPanelECE,
 			double solarPanelRotateSpeed,
 			double electrolyzerMaxPower,
-			double electrolyzerECE
+			double electrolyzerECE,
+			Point3d earthCoords
 	) {
 		super(center, RADIUS, MASS);
 
@@ -445,14 +488,22 @@ public class Station extends PhysicalBody {
 		workingDevices.put(WorkingDeviceName.ELECTROLYZER, new Electrolyzer(
 				electrolyzerMaxPower > 0 ? electrolyzerMaxPower : ELECTROLYZER_MAX_POWER,
 				electrolyzerECE > 0 ? electrolyzerECE : ELECTORLYZER_ECE));
+		
+		panel = new Panel(earthCoords);
 	}
 
+	public Panel getPanel(){
+		return panel;
+	}
+	
 	@Override
 	public void integrate(long timeMillis) {		//просчитывает изменение состояния станции
 		workingDevices.forEach((key, value) -> {
 			value.work(timeMillis);
-			if (key.compareTo(WorkingDeviceName.BACK_ENGINE) <= 0)	//если устройство - двигатель
+			if (key.compareTo(WorkingDeviceName.BACK_ENGINE) <= 0) //если устройство - двигатель
+			{
 				getCenter().addForce(((Engine) value).getCurrentThrustVect());	//то склдываем его тягу с силами, действующми на физ.тело
+			}
 		});
 
 		super.integrate(timeMillis);			//производим расчет состояния станции как физ. тела

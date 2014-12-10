@@ -10,17 +10,22 @@ import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.*;
 import java.rmi.registry.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import serverSnarovIA.controllerSnarovIA.Controller;
 import serverSnarovIA.controllerSnarovIA.RemoteController;
 import serverSnarovIA.modelSnarovIA.Model;
+import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalUniverse;
 
 //основной класс содержащий точку входа в приложение. Отвечает за конфигурацию модели станции, 
 //инициализацию виртуального мира и его  загрузку и сохранение и ответ на подключение клиента для передачи ему информации
 public class Server {
 
 	//константы
+	private static final String SAVE_READ_ERR = "Ошибка чтения сохраненного состояния вселенной";
 	private static final String CLIENT_CONNECTED_MSG = "%s connected";
 	private static final int REGISTRY_PORT = 4096;
 	//поля
@@ -122,7 +127,16 @@ public class Server {
 
 	private static void setupModel() {	//проводит необходимые действия для работы с моделью
 		//инициализация модели
-		model = new Model(modelFrameRate);
+		if (restart)
+			model = new Model(modelFrameRate);
+		else {
+			try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveDir + "/" + UniverseStateSaverDaemon.SAVENAME))) {
+				PhysicalUniverse oldUniverse = (PhysicalUniverse) ois.readObject();
+				model = new Model(modelFrameRate, oldUniverse);
+			} catch (IOException | ClassNotFoundException ex) {
+				System.err.println(SAVE_READ_ERR + "\n" + ex.getMessage());
+			}
+		}
 
 		//инициализация демона-сохраняльщика
 		UniverseStateSaverDaemon saverDaemon = new UniverseStateSaverDaemon(model.getUniverse(), saveDir);
@@ -136,8 +150,8 @@ public class Server {
 		controller = new Controller(model);
 		try {
 			//получаем объект-заглушку для использования на стороне клиента
-			RemoteController stub = (RemoteController) UnicastRemoteObject.exportObject(controller, 0);	
-			
+			RemoteController stub = (RemoteController) UnicastRemoteObject.exportObject(controller, 0);
+
 			//регистрируем заглушку, чтобы ее потом можно было получить удаленно
 			Registry registry = LocateRegistry.createRegistry(REGISTRY_PORT);
 			registry.bind("Controller", stub);

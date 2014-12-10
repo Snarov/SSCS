@@ -13,7 +13,7 @@ public class PhysicalUniverse implements Serializable{
 	private final ConcurrentHashMap<String, PhysicalBody> physBodies = new ConcurrentHashMap<>();		//список всех объектов в пр-ве
 	private final ConcurrentHashMap<String, ForceField> forceFields = new ConcurrentHashMap<>();		//список всех полей сил в пр-ве
 	private final ConcurrentHashMap<String, Illuminant> lightSources = new ConcurrentHashMap<>();		//список всех источников света в пр-ве
-	transient private final TimerTask integrationTask;
+	transient private TimerTask integrationTask;
 	private volatile long dT;					//квант времени	(мс)
 	private volatile double timeFactor;			//фактор времени характеризует скорость течения времени
 	transient private Timer timer;						//таймер, обеспечивающий запуск выполнения операций интегрирования в отдельном потоке	
@@ -24,12 +24,25 @@ public class PhysicalUniverse implements Serializable{
 		timeFactor = aTimeFactor;
 		timer = new Timer(true);	//создает таймер, работающий, как демон
 
+		initTimerTask();
+	}
+	
+	//cлужебные методы инициализации
+	public void initTimerTask(){
+		if(integrationTask != null)
+			return;
 		integrationTask = new TimerTask() { //задача для другого потока
 			@Override
 			public synchronized void run() { //вызывает метод из внешнего класса (просто чтобы писать не здесь, а ниже)
 				integrate();
 			}
 		};
+	}
+	
+	public void initTimer(){
+		if(timer != null)
+			return;
+		timer = new Timer(true);
 	}
 	
 	public PhysicalUniverse(long dT0, double aTimeFactor, ConcurrentHashMap<String, PhysicalBody> aPhysBodies,

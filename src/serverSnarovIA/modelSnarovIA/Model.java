@@ -102,6 +102,14 @@ public class Model {
 		physicalUniverse.addLightSource("SUN", sun);
 	}
 	
+	public Model(long aFrameRate, PhysicalUniverse oldUniverse){
+		frameRate = aFrameRate;
+		physicalUniverse = oldUniverse;
+		
+		physicalUniverse.initTimer();
+		physicalUniverse.initTimerTask();
+	}
+	
 	public PhysicalUniverse getUniverse(){
 		return physicalUniverse;
 	}

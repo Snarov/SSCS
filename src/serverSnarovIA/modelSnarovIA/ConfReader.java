@@ -1,4 +1,4 @@
-package serverSnarovIA;
+package serverSnarovIA.modelSnarovIA;
 
 import java.io.File;
 import java.io.FileReader;

@@ -1,6 +1,5 @@
 package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 
-import javax.media.j3d.BoundingSphere;
 import javax.vecmath.Vector3d;
 import javax.vecmath.Point3d;
 import static java.lang.Math.pow;

@@ -4,17 +4,18 @@ import java.util.*;
 import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
+import java.io.Serializable;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalBody;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Plane;
 
 //представляет собой упрощенную модель симулируемой космической станции, оборудованной двигателями, аккумулятором,солнечными генераторами,
 //блоком питания, электролизером, резервуаром для водорода.
-public class Station extends PhysicalBody {
+public class Station extends PhysicalBody implements Serializable{
 
 	//внутренние классы
 	//имена рабочих устройств станции
-	private enum WorkingDeviceName {
+	public enum WorkingDeviceName implements Serializable{
 
 		LEFT_ENGINE,
 		RIGHT_ENGINE,
@@ -28,13 +29,13 @@ public class Station extends PhysicalBody {
 	}
 
 	//возможные направления двигателей
-	public enum EngineDir {
+	public enum EngineDir implements Serializable{
 
 		left, right, top, bottom, front, back
 	}
 
 	//панель приборов станции. Ответственна за расчет параметров и их предоставление. что-то типа прокси-класса для доступа к состоянию внутр обхектов
-	public class Panel {
+	public class Panel implements Serializable{
 
 		//поля
 		private final Point3d planetCoords;			//координаты планеты, на орбите которой находится станция
@@ -45,31 +46,33 @@ public class Station extends PhysicalBody {
 		}
 
 		//поведение
-		public double getAltitude(){
-			//добавить расчет высоты
-			return 0;
+		public double getAltitude() {
+			return planetCoords.distance(getCenter());
 		}
-		
-		public double getSpeed(){
-			//добавить расчет скорости
-			return 0;
+
+		public double getSpeed() {
+			return getCenter().getVelocity().length();
 		}
-		
-		public double getOxygenLevel(){
+
+		public double getOxygenLevel() {
 			return oxygen.getCurrentReserve();
 		}
-		
-		public double getHydrogenLevel(){
+
+		public double getHydrogenLevel() {
 			return hydrogen.getCurrentReserve();
 		}
-		
-		public double getBatteryLevel(){
+
+		public double getBatteryLevel() {
 			return battery.getChargeLevel();
+		}
+		
+		public double getSolarPanelAngle(){
+			return ((SolarPanel)workingDevices.get(WorkingDeviceName.LEFT_SOLAR_PANEL)).getCurrentAngle();
 		}
 	}
 
 	//двигатель создает тягу, способную изменить направление движения станции
-	private class Engine implements StationWorkingDevice {
+	private class Engine implements StationWorkingDevice, Serializable {
 		//Константы
 
 		//поля
@@ -134,7 +137,7 @@ public class Station extends PhysicalBody {
 			return currentThrust;
 		}
 
-		public Vector3d getCurrentThrustVect() {
+		synchronized public Vector3d getCurrentThrustVect() {
 			return currentThrustVect;
 		}
 
@@ -142,7 +145,7 @@ public class Station extends PhysicalBody {
 			return thrustValue;
 		}
 
-		public void setCurrentThrust(double aCurrentThrust) {
+		synchronized public void setCurrentThrust(double aCurrentThrust) {
 			if (aCurrentThrust <= maxThrust) {
 				currentThrust = aCurrentThrust;
 			} else {
@@ -152,7 +155,7 @@ public class Station extends PhysicalBody {
 
 		//поведение
 		@Override
-		public void work(long timeMillis) {					//просчитывает работу двигателя за определенное время
+		synchronized public void work(long timeMillis) {					//просчитывает работу двигателя за определенное время
 			if (currentThrust == 0) {
 				return;
 			}
@@ -172,7 +175,7 @@ public class Station extends PhysicalBody {
 	}
 
 	//представляет собой электролизер, с помощью энергии аккумулятора проводящий электролиз воды и помещающий его продукты в резервуары
-	private class Electrolyzer implements StationWorkingDevice {
+	private class Electrolyzer implements StationWorkingDevice, Serializable {
 
 		//константы
 		private final double ENERGY_COST = 2.5811537E7;	 //затраты на электролиз (Дж/кг)
@@ -199,11 +202,11 @@ public class Station extends PhysicalBody {
 			return ECE;
 		}
 
-		public double getCurrentPower() {
+		public synchronized double getCurrentPower() {
 			return currentPower;
 		}
 
-		public void setCurrent(double aCurrentPower) {
+		public synchronized void setCurrentPower(double aCurrentPower) {
 			if (aCurrentPower <= currentPower) {
 				currentPower = aCurrentPower;
 			} else {
@@ -213,7 +216,7 @@ public class Station extends PhysicalBody {
 
 		//поведение
 		@Override
-		public void work(long timeMillis) {
+		public synchronized void work(long timeMillis) {
 			double electrolisisEnergy = currentPower * timeMillis / 1000;	//энергия, необходимая для этого такта электролиза (Дж)
 			double waterMass = electrolisisEnergy / ENERGY_COST;
 			if (battery.uncharge(electrolisisEnergy) && water.retrieveMater(waterMass)) {
@@ -225,7 +228,7 @@ public class Station extends PhysicalBody {
 	}
 
 	//солнечная панель для получения электроэнергии от солнца. Представляет прямоугольную панель с приводом для вращения
-	private class SolarPanel implements StationWorkingDevice {
+	private class SolarPanel implements StationWorkingDevice, Serializable {
 
 		//константы
 		public final static double LENGHT = 10;		//длина прямоугольника солнечной панели (м)
@@ -252,7 +255,7 @@ public class Station extends PhysicalBody {
 			return ECE;
 		}
 
-		public Plane getPlane() {
+		public synchronized Plane getPlane() {
 			return plane;
 		}
 
@@ -264,14 +267,22 @@ public class Station extends PhysicalBody {
 			return rotateSpeed;
 		}
 
+		public synchronized double getCurrentAngle() {
+			return currentAngle;
+		}
+
+		public synchronized double getTargetAngle() {
+			return targetAngle;
+		}
+
 		//поведение
-		private void rotate(double angle) {		//начинает вращение панели на заданный угол
+		private synchronized void rotate(double angle) {		//начинает вращение панели на заданный угол
 			targetAngle += angle;
 			targetAngle -= (int) (targetAngle / (2 * Math.PI)) * Math.PI;	// угол лежит на отрезке [-PI; PI]
 		}
 
 		@Override
-		public void work(long timeMillis) {
+		public synchronized void work(long timeMillis) {
 			if (currentAngle != targetAngle) {	//если вращение продолжается
 
 				double rotation;
@@ -290,10 +301,11 @@ public class Station extends PhysicalBody {
 			double collectedEnergy = plane.getRadiantFlux() * ECE * timeMillis / 3600000;	//выделенная из света энергия (Вт*ч)		
 			battery.charge(collectedEnergy);
 		}
+
 	}
 
 	//представляет собой аккумулятор, который хранит электричество для нужд станции
-	private class Battery {
+	private class Battery implements Serializable{
 
 		//поля
 		private final double capacity;	//емкость аккумулятора (Вт * ч)
@@ -334,7 +346,7 @@ public class Station extends PhysicalBody {
 		}
 	}
 
-	private class Reservoir {
+	private class Reservoir implements Serializable{
 
 		//поля
 		private final double capacity;			//максимальное количество сохраняемого в-ва (кг)
@@ -401,7 +413,7 @@ public class Station extends PhysicalBody {
 	private final Reservoir water;							// емкость с водой
 	private final Reservoir oxygen;							// емкость с кислородом
 	private final Reservoir hydrogen;						// емкость с водородом
-	
+
 	private final Panel panel;
 
 	private final EnumMap<WorkingDeviceName, StationWorkingDevice> workingDevices; //активные раб. устройства станции
@@ -488,12 +500,26 @@ public class Station extends PhysicalBody {
 		workingDevices.put(WorkingDeviceName.ELECTROLYZER, new Electrolyzer(
 				electrolyzerMaxPower > 0 ? electrolyzerMaxPower : ELECTROLYZER_MAX_POWER,
 				electrolyzerECE > 0 ? electrolyzerECE : ELECTORLYZER_ECE));
-		
+
 		panel = new Panel(earthCoords);
 	}
 
-	public Panel getPanel(){
+	public Panel getPanel() {
 		return panel;
+	}
+	
+	public void setEngineThrust(WorkingDeviceName engine, double thrust){
+		if(engine.compareTo(Station.WorkingDeviceName.BACK_ENGINE) > 0) //если указано имя устройства, не являющегося двигателем
+			return;
+		((Engine)workingDevices.get(engine)).setCurrentThrust(thrust);
+	}
+	
+	public void rotateSolarPanels(double angle){
+		((SolarPanel)workingDevices.get(WorkingDeviceName.LEFT_SOLAR_PANEL)).rotate(angle);
+	}
+
+	public void setElectrolyzerPower(double power){
+		((Electrolyzer)workingDevices.get(WorkingDeviceName.ELECTROLYZER)).setCurrentPower(power);
 	}
 	
 	@Override

@@ -16,6 +16,7 @@ public class StationInfo implements SendingInfo{
 	private	double oxygenLevel;
 	private	double hydrogenLevel;
 	private double batteryLevel;
+	private double solarPanelAngle;
 	
 	//конструкторы
 	public StationInfo(PhysicalUniverse aUniverse){
@@ -23,18 +24,21 @@ public class StationInfo implements SendingInfo{
 	}
 	
 	@Override
-	public void refresh(){
+	public void refresh(){		//информация обновляется после расчета движком фрейма
 		synchronized(universe){
 			try {
 				universe.wait();
 				//после того, как освободится блокировка
-				Station.Panel stationPanel = ((Station)universe.getPhysBodies().get("Station")).getPanel();
+				Station station = (Station)universe.getPhysBodies().get("Station");
+				stationCoords = new Point3d(station.getCenter());
 				
+				Station.Panel stationPanel = (station.getPanel());
 				altitude = stationPanel.getAltitude();
 				speed = stationPanel.getSpeed();
 				oxygenLevel = stationPanel.getOxygenLevel();
 				hydrogenLevel = stationPanel.getHydrogenLevel();
 				batteryLevel = stationPanel.getBatteryLevel();
+				solarPanelAngle = stationPanel.getSolarPanelAngle();
 			} catch (InterruptedException ex) {}
 		}
 	}
@@ -61,5 +65,9 @@ public class StationInfo implements SendingInfo{
 
 	public double getBatteryLevel() {
 		return batteryLevel;
+	}
+
+	public double getSolarPanelAngle() {
+		return solarPanelAngle;
 	}
 }

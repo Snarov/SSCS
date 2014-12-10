@@ -14,14 +14,14 @@ public class UniverseStateSaverDaemon extends Thread {
 	private static final String SAVENAME = "Universe.sav";		//имя файла сохранения
 	private static final String SAVE_ERR_WARN = "Warning: ошибка сохранения состояния";
 	//поля
-	private String saveDir = "";	//директория с сохраняемым файлом
+	private String saveDir = "/home/snarov/NetBeansProjects/SSCS/dist";	//директория с сохраняемым файлом(в дебаге такая)
 	private final PhysicalUniverse savingUniverse;
 
 	//конструкторы
 	public UniverseStateSaverDaemon(PhysicalUniverse aSavingUniverse, String aSaveDir) {
 		savingUniverse = aSavingUniverse;
 
-		if (aSaveDir == null)
+		if (aSaveDir != null)
 			saveDir = aSaveDir;
 
 		setDaemon(true);
@@ -44,7 +44,7 @@ public class UniverseStateSaverDaemon extends Thread {
 
 			}
 		} catch (IOException ex) {
-			System.err.println(SAVE_ERR_WARN);
+			System.err.println(SAVE_ERR_WARN + ": " + ex);
 		} catch (InterruptedException ex) {
 		}
 	}

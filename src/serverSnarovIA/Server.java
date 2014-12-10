@@ -3,17 +3,18 @@ package serverSnarovIA;
 import java.util.*;
 import java.io.File;
 import java.io.IOException;
-import javax.media.j3d.BoundingSphere;
 import java.util.regex.*;
-import javax.vecmath.Point3d;
-import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Atmosphere;
-import serverSnarovIA.modelSnarovIA.physicsSnarovIA.GravityField;
-import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Illuminant;
-import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
-import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalUniverse;
-import serverSnarovIA.modelSnarovIA.stationSnarovIA.Station;
 import java.net.*;
-
+import java.rmi.AccessException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.RemoteException;
+import java.rmi.server.*;
+import java.rmi.registry.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import serverSnarovIA.controllerSnarovIA.Controller;
+import serverSnarovIA.controllerSnarovIA.RemoteController;
+import serverSnarovIA.modelSnarovIA.Model;
 
 //основной класс содержащий точку входа в приложение. Отвечает за конфигурацию модели станции, 
 //инициализацию виртуального мира и его  загрузку и сохранение и ответ на подключение клиента для передачи ему информации
@@ -21,15 +22,17 @@ public class Server {
 
 	//константы
 	private static final String CLIENT_CONNECTED_MSG = "%s connected";
-	private static final String CONF_FILE_NAME = "/home/snarov/NetBeansProjects/SSCS/SSCS.conf";
-
+	private static final int REGISTRY_PORT = 4096;
 	//поля
 	private static boolean restart = false;								//инициализируется ли виртуальная вселенная заново
 	private static int port = 1488;										//порт, на котором работает сервер
 	private static final Password password = new Password();			//шифрованный пароль подключения
-	private static long frameRate = 33;									//время кадра (мс)
+	private static long modelFrameRate = 33;									//время кадра (мс)
 	private static String saveDir = null;								//директория с сохранениями 
 	private static final HashMap<String, CmdArgAction> cmdArgActions = new HashMap<>();	// отображение имен аргументов командной строки на соотв. действия
+
+	private static Model model;
+	private static Controller controller;
 
 	//блок инициализации отображения задает связи между командами и их обработчиками
 	static {
@@ -69,7 +72,7 @@ public class Server {
 				return;
 			}
 			try {
-				frameRate = Integer.parseUnsignedInt(value);
+				modelFrameRate = Integer.parseUnsignedInt(value);
 			} catch (NumberFormatException exc) {
 				System.err.println("Неверное значение времени кадра");
 				System.exit(126);
@@ -97,101 +100,58 @@ public class Server {
 	}
 
 	public static void main(String[] args) {
+		//этап 1 - разбор командной строки
+		parseCmd(args);
+		//этап 2 - подготовка модели
+		setupModel();
+		//этап 3 - подготовка контроллера
+		setupController();
+		//этап 4 - работа с удаленным клиентом
+		workWithClient();
+	}
+
+	//разбиение на процедуры
+	private static void parseCmd(String args[]) {
 		//разбор аргументов командной строки
 		for (int i = 0; i < args.length; i++) {
 			if (cmdArgActions.containsKey(args[i])) {
 				cmdArgActions.get(args[i]).process(++i < args.length ? args[i] : null);
 			}
 		}
+	}
 
-		//чтение файла конфигурации
-		ConfReader confReader = new ConfReader(CONF_FILE_NAME);
-		//параметры станции
-		double altitude = confReader.getConfValue("ALTITUDE");			//высота расположения станции
-		double batteryCapacity = confReader.getConfValue("BATTERY_CAPACITY");
-		double waterCapacity = confReader.getConfValue("WATER_CAPACITY");
-		double oxygenCapacity = confReader.getConfValue("OXYGEN_CAPACITY");
-		double hydrogenCapacity = confReader.getConfValue("HYDROGEN_CAPACITY");
-		double engineMaxThrust = confReader.getConfValue("ENGINE_MAX_THRUST_VALUE");
-		double engineThrustValue = confReader.getConfValue("ENGINE_THRUST_VALUE");
-		double engineWorkingMassValue = confReader.getConfValue("ENGINE_WORKING_MASS_VALUE");
-		double solarPanelECE = confReader.getConfValue("SOLAR_PANEL_ECE");
-		double solarPanelRotateSpeed = confReader.getConfValue("SOLAR_PANEL_ROTATE_SPEED");
-		double electrolyzerMaxPower = confReader.getConfValue("ELECTROLYZER_MAX_POWER");
-		double electrolyzerECE = confReader.getConfValue("ELECTROLYZER_ECE");
-		//параметры внешнего окружения
-		double earthMass = confReader.getConfValue("EARTH_MASS");
-		double gravityFieldRadius = confReader.getConfValue("GRAVITY_FIELD_RADIUS");
-		double atmExternalBoundsRadius = confReader.getConfValue("ATM_EXTERNAL_BOUNDS_RADIUS");
-		double atmInternalBoundsRadius = confReader.getConfValue("ATM_INTERNAL_BOUNDS_RADIUS");
-		double atmTempLapseRate = confReader.getConfValue("ATM_TEMP_LAPSE_RATE");
-		double G = confReader.getConfValue("G");
-		double atmBasePressure = confReader.getConfValue("ATM_BASE_PRESSURE");
-		double atmTemperature = confReader.getConfValue("ATM_TEMPERATURE");
-		double atmMolarMass = confReader.getConfValue("ATM_MOLAR_MASS");
-		double sunIntensity = confReader.getConfValue("SUN_INTENSITY");
-		double sunLuminousEfficacy = confReader.getConfValue("SUN_LUMINOUS_EFFICACY");
-		double sunDistance = confReader.getConfValue("SUN_DISTANCE");
-
-		//создание и заполнение виртуальной вселенной
-		PhysicalUniverse physicalUniverse = new PhysicalUniverse(frameRate, 1);
-
-		MaterialPoint center = new MaterialPoint(0, 0, 1);
-		center.scale(altitude);
-		
-		Station station = new Station(
-				center,
-				batteryCapacity,
-				waterCapacity,
-				oxygenCapacity,
-				hydrogenCapacity,
-				engineMaxThrust,
-				engineThrustValue,
-				engineWorkingMassValue,
-				solarPanelECE,
-				solarPanelRotateSpeed,
-				electrolyzerMaxPower,
-				electrolyzerECE,
-				new Point3d()
-		);
-
-		GravityField earthGravity = new GravityField(earthMass, new BoundingSphere(new Point3d(), gravityFieldRadius));
-
-		Point3d atmCenter = new Point3d();
-		Atmosphere earthAtmosphere = new Atmosphere(
-				new BoundingSphere(atmCenter, atmExternalBoundsRadius),
-				new BoundingSphere(atmCenter, atmInternalBoundsRadius),
-				atmTempLapseRate,
-				G,
-				atmBasePressure,
-				atmTemperature,
-				atmMolarMass
-		);
-
-		Point3d sunCoords = new Point3d(0, 0, 1);
-		sunCoords.scale(sunDistance > 0 ? sunDistance : Illuminant.AU);
-		Illuminant sun = new Illuminant(
-				sunIntensity,
-				sunLuminousEfficacy,
-				new BoundingSphere(sunCoords, Illuminant.BOUNDS_RADIUS),
-				sunCoords
-		);
-
-		physicalUniverse.addForceField("EARTH_GRAVITY", earthGravity);
-		physicalUniverse.addForceField("EARTH_ATMOSPHERE", earthAtmosphere);
-		physicalUniverse.addPhysBody("STATION", station);
-		physicalUniverse.addLightSource("SUN", sun);
+	private static void setupModel() {	//проводит необходимые действия для работы с моделью
+		//инициализация модели
+		model = new Model(modelFrameRate);
 
 		//инициализация демона-сохраняльщика
-		UniverseStateSaverDaemon saverDaemon = new UniverseStateSaverDaemon(physicalUniverse, saveDir);
+		UniverseStateSaverDaemon saverDaemon = new UniverseStateSaverDaemon(model.getUniverse(), saveDir);
 
 		//запуск движка и демона-сохраняльщика
-		physicalUniverse.startTime();
+		model.getUniverse().startTime();
 		saverDaemon.start();
+	}
 
+	private static void setupController() {	//создает контроллер и настраивает для него RMI
+		controller = new Controller(model);
+		try {
+			//получаем объект-заглушку для использования на стороне клиента
+			RemoteController stub = (RemoteController) UnicastRemoteObject.exportObject(controller, 0);	
+			
+			//регистрируем заглушку, чтобы ее потом можно было получить удаленно
+			Registry registry = LocateRegistry.createRegistry(REGISTRY_PORT);
+			registry.bind("Controller", stub);
+		} catch (RemoteException | AlreadyBoundException ex) {
+			System.err.println(ex);
+			System.exit(126);
+		}
+	}
+
+	private static void workWithClient() {
 		//ожидание авторизации со стороны клиента
-		try (ServerSocket serverSocket = new ServerSocket(port, 1)) {	//слушающий сокет для 1 входящего соединения
-			while (true) {
+		while (true) {
+			try (ServerSocket serverSocket = new ServerSocket(port, 1)) {	//слушающий сокет для 1 входящего соединения
+
 				Socket authSocket = serverSocket.accept();				//получение оконечной точки сетевого соединения с клиентом для проверки пароля
 				Scanner scanner = new Scanner(authSocket.getInputStream());
 
@@ -202,13 +162,18 @@ public class Server {
 					clientPassword = scanner.next(Password.PWD_PATTERN);
 				} while (!password.comparePass(clientPassword));
 
-				System.out.println(String.format(CLIENT_CONNECTED_MSG, authSocket.getInetAddress()));	//вывод строки подключенияв
-				
+				System.out.println(String.format(CLIENT_CONNECTED_MSG, authSocket.getInetAddress()));	//вывод строки подключения
+
 				authSocket.getOutputStream().write((int) '\06');		//послать клиенту ACK (подтверждение)
 				authSocket.close();
+
+				//начинаем передачу клиенту информации после
+				ServerToClientTransmissionDaemon stctd = new ServerToClientTransmissionDaemon(new StationInfo(model.getUniverse()), null);
+				stctd.run();	//выполняем код демона в основном потоке (пока что так)
+			} catch (IOException ex) {
+				System.err.println(ex);
 			}
-		} catch (IOException ex) {
-			System.err.println(ex);
+
 		}
 	}
 }

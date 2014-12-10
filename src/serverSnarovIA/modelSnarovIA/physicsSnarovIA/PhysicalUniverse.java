@@ -13,16 +13,16 @@ public class PhysicalUniverse implements Serializable{
 	private final ConcurrentHashMap<String, PhysicalBody> physBodies = new ConcurrentHashMap<>();		//список всех объектов в пр-ве
 	private final ConcurrentHashMap<String, ForceField> forceFields = new ConcurrentHashMap<>();		//список всех полей сил в пр-ве
 	private final ConcurrentHashMap<String, Illuminant> lightSources = new ConcurrentHashMap<>();		//список всех источников света в пр-ве
-	private final TimerTask integrationTask;
+	transient private final TimerTask integrationTask;
 	private volatile long dT;					//квант времени	(мс)
 	private volatile double timeFactor;			//фактор времени характеризует скорость течения времени
-	private Timer timer;						//таймер, обеспечивающий запуск выполнения операций интегрирования в отдельном потоке	
+	transient private Timer timer;						//таймер, обеспечивающий запуск выполнения операций интегрирования в отдельном потоке	
 
 	//конструкторы
 	public PhysicalUniverse(long dT0, double aTimeFactor) {
 		dT = dT0;
 		timeFactor = aTimeFactor;
-		timer = new Timer(true);	//запускает таймер, работающий как демон
+		timer = new Timer(true);	//создает таймер, работающий, как демон
 
 		integrationTask = new TimerTask() { //задача для другого потока
 			@Override
@@ -69,13 +69,13 @@ public class PhysicalUniverse implements Serializable{
 	}
 	
 	public synchronized void setdT(long dT0) {
+		stopTime();
 		dT = dT0;
 		startTime();
 	}
 	
 	public synchronized void setTimeFactor(double aTimeFactor) {
 		timeFactor = aTimeFactor;
-		startTime();
 	}
 	
 	public synchronized void setPhysBodies(ConcurrentHashMap<String, PhysicalBody> aPhysBodies) {
@@ -136,11 +136,10 @@ public class PhysicalUniverse implements Serializable{
 	}
 	
 	public void startTime() {		//начинает ход времени
-		//stopTime();
 		timer.scheduleAtFixedRate(integrationTask, 0, dT);	//немедленный запуск задачи с фиксированной частотой исполнения
 	}
 	
 	public void stopTime() {			//останавливает ход времени
-		timer.cancel();
+		integrationTask.cancel();
 	}
 }

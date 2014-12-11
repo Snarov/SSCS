@@ -178,7 +178,7 @@ public class Server {
 				authSocket.close();
 
 				//начинаем передачу клиенту информации после
-				ServerToClientTransmissionDaemon stctd = new ServerToClientTransmissionDaemon(new StationInfo(model.getUniverse()), null);
+				ServerToClientTransmissionDaemon stctd = new ServerToClientTransmissionDaemon(model.getUniverse(), null);
 				stctd.run();	//выполняем код демона в основном потоке (пока что так)
 			} catch (IOException ex) {
 				System.err.println(ex);

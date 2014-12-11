@@ -4,25 +4,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.*;
+import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalUniverse;
 
 //поток-демон, выполняющий отправку данных от модели на сервере к клиенту (использует протокол UDP)
 public class ServerToClientTransmissionDaemon extends Thread {
 
 	//константы
 	private static final int REMOTE_VIEW_PORT = 2048;	//порт клиента, принимающий данные
-	private static final int TIMEOUT = 5000;
+	private static final int ACK_TIMEOUT = 15;			//вреия ожидания подтверждения
+	private static final short MAX_PACKETS_LOSS = 50;	//допустимое количество неподтвержденных пакетов подряд. При достижении этого числа клиент считается отключенным
 
 	//поля
-	private final SendingInfo sendingInfo;	    //некоторая структура данных, подлежащая отправке
+	private final StationInfoRefresher stationInfoRefresher;	    //некоторая структура данных, подлежащая отправке
 	private final DatagramSocket socket;
 	private final InetAddress remoteViewAddr;
 
 	//конструкторы
-	public ServerToClientTransmissionDaemon(SendingInfo aSendingInfo, InetAddress aRemoteViewAddr) throws SocketException {
+	public ServerToClientTransmissionDaemon(PhysicalUniverse physUniverse, InetAddress aRemoteViewAddr) throws SocketException {
 		socket = new DatagramSocket();
-		socket.setSoTimeout(TIMEOUT);
+		socket.setSoTimeout(ACK_TIMEOUT);
 		
-		sendingInfo = aSendingInfo;
+		stationInfoRefresher = new StationInfoRefresher(physUniverse);
 		remoteViewAddr = aRemoteViewAddr;
 	}
 
@@ -30,20 +32,23 @@ public class ServerToClientTransmissionDaemon extends Thread {
 	public void run() {
 		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();			//поток байтов для дальнейшей передачи
 		try (ObjectOutputStream oos = new ObjectOutputStream(byteStream)) {
-			while (true) {
-				sendingInfo.refresh();
+			short lostPacketsCount = 0;
+			
+			while (lostPacketsCount < MAX_PACKETS_LOSS) {
+				stationInfoRefresher.refresh();
 
-				oos.writeObject(sendingInfo);
+				oos.writeObject(stationInfoRefresher.getSendingInfo());
 				byte[] buffer = byteStream.toByteArray();
 
 				DatagramPacket datagram = new DatagramPacket(buffer, buffer.length, remoteViewAddr, REMOTE_VIEW_PORT);
 				socket.send(datagram);
 				try {
 					socket.receive(datagram);
+					lostPacketsCount = 0;
 				}catch(SocketTimeoutException ex){
-					socket.close();
-					return;
+					++lostPacketsCount;
 				}
+				
 				byteStream.reset();
 			}
 		} catch (IOException ex) {

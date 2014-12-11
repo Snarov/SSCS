@@ -1,16 +1,25 @@
 package clientSnarovIA;
 
 import clientSnarovIA.viewSnarovIA.SSCSFrame;
-import java.net.*;
-import javax.swing.*;
 import controllerSnarovIA.*;
+import data.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.PrintStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.InetSocketAddress;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.*;
+import java.rmi.registry.LocateRegistry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.io.*;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 //клиент инициализирует представление, связывается с сервером через TCP для аутентификации и инициализаци панели управления, 
 //получает датаграммы с сервера и вызывает методы удаленного объекта на сервере.
@@ -66,20 +75,25 @@ public class Client {
 
 	private static void startReceiving() {			//принимает пакеты и регулярно шлет серверу подтверждения
 		try (DatagramSocket socket = new DatagramSocket(2048)) {
-			DatagramPacket receivedPacket = new DatagramPacket(null, 0);
+			DatagramPacket receivedPacket = new DatagramPacket(new byte[4096], 4096);		//проверить
 			DatagramPacket ackPacket = new DatagramPacket(new byte[]{'\06'}, 1, serverAddr, UDP_PORT);
-			long lastACKTime = System.currentTimeMillis();
-			while (true) {
-				socket.receive(receivedPacket);	//прием
-				socket.send(ackPacket);			//подтверждение
 
-				//десериализация информации о кадре
-				
-				
-				//обновление представления
-				appFrame.getView().update()
+			try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(receivedPacket.getData()))) {
+
+				long lastACKTime = System.currentTimeMillis();
+
+				while (true) {
+					socket.receive(receivedPacket);	//прием
+					socket.send(ackPacket);			//подтверждение
+
+					//десериализация информации о кадре
+					SendingInfo receivedInfo = (SendingInfo)ois.readObject();
+					//обновление представления
+					SendingInfo frameInfo = appFrame.getView().update(receivedInfo);
+				}
+			} catch (ClassNotFoundException ex) {
+				System.err.println(ex.getMessage());
 			}
-
 		} catch (SocketException ex) {
 			Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
 		} catch (IOException ex) {
@@ -87,7 +101,7 @@ public class Client {
 		}
 	}
 
-	private static boolean authorize(InetAddress addr, int port, String password) {		//пытается авторизоваться на сервере. true, если удалось подключиться
+	public static boolean authorize(InetSocketAddress sockAddr, String password) {		//пытается авторизоваться на сервере. true, если удалось подключиться
 		//если не подключен к серверу, то подключить
 		try {
 			if (authSock == null)
@@ -100,7 +114,7 @@ public class Client {
 			while (System.currentTimeMillis() - currentTime < ACK_WAIT_TIME) {
 				if (authSock.getInputStream().read() == '\06') {
 					authSock.close();
-					return true;
+					return isConnected = true;
 				}
 			}
 		} catch (IOException ex) {

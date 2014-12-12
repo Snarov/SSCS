@@ -29,7 +29,7 @@ public class Client {
 	//константы
 	private static final int REGISTRY_PORT = 4096;
 	private static final int UDP_PORT = 2048;
-	private static final int ACK_WAIT_TIME = 1000;	//максимальное ремя ожидания подтверждения от сервера
+	private static final int ACK_WAIT_TIME = 1000;	//максимальное время ожидания подтверждения от сервера
 
 	//поля
 	private static SSCSFrame appFrame;				//главный фрейм приложения

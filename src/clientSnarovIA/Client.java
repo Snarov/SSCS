@@ -42,7 +42,11 @@ public class Client {
 	public static void main() {
 		//этап 1 - создание фрейма
 		setupFrame();
-		while (!isConnected);	//ожидание подключения к серверу
+		while (!isConnected)
+			try {
+				Thread.sleep(500);//ожидание подключения к серверу
+			} catch (InterruptedException ex) {
+			}
 		//этап 2 - инициализация удаленного контроллера
 		setupController();
 		//этап 3 - прием датаграм от сервера
@@ -86,7 +90,7 @@ public class Client {
 					socket.send(ackPacket);			//подтверждение
 
 					//десериализация информации о кадре
-					SendingInfo receivedInfo = (SendingInfo)ois.readObject();
+					SendingInfo receivedInfo = (SendingInfo) ois.readObject();
 					//обновление представления
 					SendingInfo frameInfo = appFrame.getView().update(receivedInfo);
 				}
@@ -121,8 +125,10 @@ public class Client {
 		}
 		return false;
 	}
-	
-	private static void initView(){		//получает данные для инициализации представления от сервера и инициализирует представление
-		
+
+	private static void initView() {		//получает данные для инициализации представления от сервера и инициализирует представление
+		try (ObjectInputStream ois = new ObjectInputStream(authSock.getInputStream())) {
+			
+		}
 	}
 }

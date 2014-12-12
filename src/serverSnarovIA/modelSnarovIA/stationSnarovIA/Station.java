@@ -1,10 +1,11 @@
 package serverSnarovIA.modelSnarovIA.stationSnarovIA;
 
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
-import java.io.Serializable;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.MaterialPoint;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.PhysicalBody;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Plane;
@@ -506,6 +507,26 @@ public class Station extends PhysicalBody implements Serializable{
 
 	public Panel getPanel() {
 		return panel;
+	}
+	
+	public double getBatteryCapacity(){
+		return battery.getCapacity();
+	}
+	
+	public double getWaterCapacity(){
+		return water.getCapacity();
+	}
+	
+	public double getOxygenCapacity(){
+		return oxygen.getCapacity();
+	}
+	
+	public double getHydrogenCapacity(){
+		return hydrogen.getCapacity();
+	}
+	
+	public double getEngineMaxThrust(){
+		return ((Engine)workingDevices.get(WorkingDeviceName.BACK_ENGINE)).getMaxThrust();
 	}
 	
 	public void setEngineThrust(WorkingDeviceName engine, double thrust){

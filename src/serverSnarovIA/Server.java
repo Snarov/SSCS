@@ -2,6 +2,7 @@ package serverSnarovIA;
 
 import java.util.*;
 import java.io.File;
+import java.io.*;
 import java.util.regex.*;
 import java.net.*;
 import java.rmi.AlreadyBoundException;
@@ -175,6 +176,11 @@ public class Server {
 				System.out.println(String.format(CLIENT_CONNECTED_MSG, authSocket.getInetAddress()));	//вывод строки подключения
 
 				authSocket.getOutputStream().write((int) '\06');		//послать клиенту ACK (подтверждение)
+				
+				//послать клиенту данные инициализации модели
+				try(ObjectOutputStream ois = new ObjectOutputStream(authSocket.getOutputStream())){
+					ois.writeObject(new ViewInitData((model)));
+				}
 				authSocket.close();
 
 				//начинаем передачу клиенту информации после

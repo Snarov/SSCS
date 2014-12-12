@@ -1,6 +1,7 @@
 package clientSnarovIA.viewSnarovIA;
 
 import javax.swing.*;
+import serverSnarovIA.ViewInitData;
 
 //основное окно приложения
 public class SSCSFrame extends JFrame{
@@ -9,7 +10,7 @@ public class SSCSFrame extends JFrame{
 	
 	//поля
 	private final AuthorizationComponent authComp;	
-	private WorkspaceComponent workComp;
+	private View view;
 	
 	//конструкторы
 	public  SSCSFrame(){
@@ -19,7 +20,14 @@ public class SSCSFrame extends JFrame{
 		pack();
 	}
 	
-	public WorkspaceComponent getView(){
-		return workComp;
+	public View getView(){
+		return view;
+	}
+	
+	public void initView(ViewInitData viewInitData){		//создает представление и отображает его в этом фрейме
+		view = new View(viewInitData);
+		remove(authComp);
+		add(view);
+		pack();
 	}
 }

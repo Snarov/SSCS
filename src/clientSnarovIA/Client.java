@@ -1,8 +1,8 @@
 package clientSnarovIA;
 
 import clientSnarovIA.viewSnarovIA.SSCSFrame;
-import controllerSnarovIA.*;
-import data.*;
+import serverSnarovIA.controllerSnarovIA.*;
+import serverSnarovIA.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -70,7 +70,7 @@ public class Client {
 
 	private static void setupController() {
 		try {
-			controller = LocateRegistry.getRegistry(serverAddr.toString(), REGISTRY_PORT).lookup("Controller");
+			controller = (RemoteController)LocateRegistry.getRegistry(serverAddr.toString(), REGISTRY_PORT).lookup("Controller");
 		} catch (RemoteException | NotBoundException ex) {
 			System.err.println(ex.getMessage());
 			System.exit(126);
@@ -93,7 +93,7 @@ public class Client {
 					//десериализация информации о кадре
 					SendingInfo receivedInfo = (SendingInfo) ois.readObject();
 					//обновление представления
-					SendingInfo frameInfo = appFrame.getView().update(receivedInfo);
+					SendingInfo frameInfo = appFrame.getView().nextFrame(receivedInfo);
 				}
 			} catch (ClassNotFoundException ex) {
 				System.err.println(ex.getMessage());

@@ -60,7 +60,7 @@ public class Server {
 				return;
 			}
 			if (!Pattern.matches(Password.PWD_PATTERN, value)) {
-				System.err.println("Некорректный формат пароля");
+				System.err.println("Некорректный формат пароля. Должны быть строчные и прописные латинские буквы и цифры");
 				System.exit(126);
 			}
 			if (!password.setPassword(value)) {

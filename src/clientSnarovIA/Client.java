@@ -21,7 +21,6 @@ import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
-
 //клиент инициализирует представление, связывается с сервером через TCP для аутентификации и инициализаци панели управления, 
 //получает датаграммы с сервера и вызывает методы удаленного объекта на сервере.
 public class Client {
@@ -70,7 +69,7 @@ public class Client {
 
 	private static void setupController() {
 		try {
-			controller = (RemoteController)LocateRegistry.getRegistry(serverAddr.toString(), REGISTRY_PORT).lookup("Controller");
+			controller = (RemoteController) LocateRegistry.getRegistry(serverAddr.toString(), REGISTRY_PORT).lookup("Controller");
 		} catch (RemoteException | NotBoundException ex) {
 			System.err.println(ex.getMessage());
 			System.exit(126);
@@ -115,16 +114,13 @@ public class Client {
 
 			//ожидание получения подтверждения
 			long currentTime = System.currentTimeMillis();
-			while (System.currentTimeMillis() - currentTime < ACK_WAIT_TIME) {
-				if (authSock.getInputStream().read() == '\06') {
-					authSock.close();
-					return isConnected = true;
-				}
-				Thread.sleep(ACK_WAIT_TIME / 10);
+			if (authSock.getInputStream().read() == '\06') {
+				authSock.close();
+				return isConnected = true;
 			}
+
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
-		} catch (InterruptedException ex) {
 		}
 		return false;
 	}
@@ -137,6 +133,6 @@ public class Client {
 			System.err.println(ex.getMessage());
 		}
 
-		appFrame.initView(viewInitData);		
+		appFrame.initView(viewInitData);
 	}
 }

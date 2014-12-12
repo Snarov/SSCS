@@ -5,6 +5,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.regex.Pattern;
 import java.net.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 //компонент представления, в котором происходит подключение к серверу
 public class AuthorizationComponent extends JComponent {
@@ -47,22 +49,30 @@ public class AuthorizationComponent extends JComponent {
 				SwingConstants.SOUTH);
 
 		//добавление обработчиков событий ввода текста для активации/деактивации кнопки подключения
-		hostField.addActionListener((e) -> {
-			isCorrectHost = Pattern.matches(HOST_PATTERN, hostField.getText());
-			setBtnMode();
+		hostField.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				isCorrectHost = Pattern.matches(HOST_PATTERN, hostField.getText());
+				setBtnMode();
+			}
 		});
 
-		passwordField.addActionListener((e) -> {
-			isCorrectPassword = Pattern.matches(PASSWORD_PATTERN, passwordField.getText());
-			setBtnMode();
+		passwordField.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				isCorrectPassword = Pattern.matches(PASSWORD_PATTERN, passwordField.getText());
+				setBtnMode();
+			}
 		});
-
-		add(centralPanel);			//добавить центральную панель в центр компонента
 
 		confirmBtn.addActionListener((e) -> {		//при нажатии на кнопку отправляем серверу данные
 			String[] hostParts = hostField.getText().split(":");
 			Client.authorize(new InetSocketAddress(hostParts[0], Integer.parseInt(hostParts[1])), passwordField.getText());
 		});
+
+		confirmBtn.setEnabled(false);
+
+		add(centralPanel);			//добавить центральную панель в центр компонента
 	}
 
 	//методы

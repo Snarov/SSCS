@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+
 //клиент инициализирует представление, связывается с сервером через TCP для аутентификации и инициализаци панели управления, 
 //получает датаграммы с сервера и вызывает методы удаленного объекта на сервере.
 public class Client {
@@ -119,16 +120,23 @@ public class Client {
 					authSock.close();
 					return isConnected = true;
 				}
+				Thread.sleep(ACK_WAIT_TIME / 10);
 			}
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
+		} catch (InterruptedException ex) {
 		}
 		return false;
 	}
 
 	private static void initView() {		//получает данные для инициализации представления от сервера и инициализирует представление
+		ViewInitData viewInitData = null;
 		try (ObjectInputStream ois = new ObjectInputStream(authSock.getInputStream())) {
-			
+			viewInitData = (ViewInitData) ois.readObject();
+		} catch (IOException | ClassNotFoundException ex) {
+			System.err.println(ex.getMessage());
 		}
+
+		appFrame.initView(viewInitData);		
 	}
 }

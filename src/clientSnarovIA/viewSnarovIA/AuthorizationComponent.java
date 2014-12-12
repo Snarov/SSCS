@@ -62,7 +62,8 @@ public class AuthorizationComponent extends JComponent {
 		confirmBtn.addActionListener((e) -> {		//при нажатии на кнопку отправляем серверу данные
 			String[] hostParts = hostField.getText().split(":");
 			if(Client.authorize(new InetSocketAddress(hostParts[0], Integer.parseInt(hostParts[1])), passwordField.getText()))
-				//TO DO 
+				//TO DO
+				return;
 		});
 
 	}

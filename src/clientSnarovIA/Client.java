@@ -33,7 +33,7 @@ public class Client {
 	//поля
 	private static SSCSFrame appFrame;				//главный фрейм приложения
 
-	private static boolean isConnected = false;		//соединен ли клиент с сервером
+	private volatile static boolean isConnected = false;		//соединен ли клиент с сервером
 	private static InetAddress serverAddr;
 	private static Socket authSock;				//TCP сокет для авторизации на сервере
 
@@ -43,7 +43,6 @@ public class Client {
 		//этап 1 - создание фрейма
 		setupFrame();
 		while (!isConnected);	//ожидание подключения к серверу
-
 		//этап 2 - инициализация удаленного контроллера
 		setupController();
 		//этап 3 - прием датаграм от сервера
@@ -105,7 +104,7 @@ public class Client {
 		//если не подключен к серверу, то подключить
 		try {
 			if (authSock == null)
-				authSock = new Socket(addr, port);
+				authSock = new Socket(sockAddr.getAddress(), sockAddr.getPort());
 
 			new PrintStream(authSock.getOutputStream()).println(password);	//передать пароль
 
@@ -121,5 +120,9 @@ public class Client {
 			System.err.println(ex.getMessage());
 		}
 		return false;
+	}
+	
+	private static void initView(){		//получает данные для инициализации представления от сервера и инициализирует представление
+		
 	}
 }

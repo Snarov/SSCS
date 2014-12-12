@@ -1,4 +1,4 @@
-package clientSnarovIA.viewSnarovIA;
+	package clientSnarovIA.viewSnarovIA;
 
 import clientSnarovIA.Client;
 import javax.swing.*;

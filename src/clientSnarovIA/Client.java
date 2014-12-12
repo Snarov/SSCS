@@ -93,7 +93,7 @@ public class Client {
 					//десериализация информации о кадре
 					SendingInfo receivedInfo = (SendingInfo) ois.readObject();
 					//обновление представления
-					SendingInfo frameInfo = appFrame.getView().nextFrame(receivedInfo);
+					//SendingInfo frameInfo = appFrame.getView().nextFrame(receivedInfo);
 				}
 			} catch (ClassNotFoundException ex) {
 				System.err.println(ex.getMessage());

@@ -25,7 +25,7 @@ public class SSCSFrame extends JFrame{
 	}
 	
 	public void initView(ViewInitData viewInitData){		//создает представление и отображает его в этом фрейме
-		view = new View(viewInitData);
+		//view = new View(viewInitData);
 		remove(authComp);
 		add(view);
 		pack();

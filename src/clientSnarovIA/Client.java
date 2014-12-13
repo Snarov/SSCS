@@ -28,7 +28,8 @@ public class Client {
 	//константы
 	private static final int REGISTRY_PORT = 4096;
 	private static final int UDP_PORT = 2048;
-	private static final int ACK_WAIT_TIME = 1000;	//максимальное время ожидания подтверждения от сервера
+		
+	public static final String TEXTURE_PATH = "/home/snarov/Документы";
 
 	//поля
 	private static SSCSFrame appFrame;				//главный фрейм приложения
@@ -39,7 +40,7 @@ public class Client {
 
 	private static RemoteController controller;
 
-	public static void main() {
+	public static void main(String[] args) {
 		//этап 1 - создание фрейма
 		setupFrame();
 		while (!isConnected)
@@ -133,6 +134,6 @@ public class Client {
 			System.err.println(ex.getMessage());
 		}
 
-		appFrame.initView(viewInitData);
+		appFrame.initView(viewInitData, TEXTURE_PATH);
 	}
 }

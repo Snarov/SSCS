@@ -161,31 +161,30 @@ public class Server {
 	private static void workWithClient() {
 		//ожидание авторизации со стороны клиента
 		while (true) {
-			try (ServerSocket serverSocket = new ServerSocket(port, 1)) {	//слушающий сокет для 1 входящего соединения
-
-				Socket authSocket = serverSocket.accept();				//получение оконечной точки сетевого соединения с клиентом для проверки пароля
-				Scanner scanner = new Scanner(authSocket.getInputStream());
-
-				while (!scanner.hasNext(Password.PWD_PATTERN));			//ожидание передачи пароля от клиента
+			try (ServerSocket serverSocket = new ServerSocket(port, 1); //слушающий сокет для 1 входящего соединения
+					Socket authSocket = serverSocket.accept() //получение оконечной точки сетевого соединения с клиентом для проверки пароля
+			) {					Scanner scanner = new Scanner(authSocket.getInputStream());
 
 				String clientPassword;
-				do {														//пока не будет введен верный пароль
-					clientPassword = scanner.next(Password.PWD_PATTERN);
-				} while (!password.comparePass(clientPassword));
+
+				while (true) {			//ожидание передачи верного пароля от клиента
+					if (scanner.hasNextLine()) {
+						clientPassword = scanner.nextLine();
+						if (Pattern.matches(Password.PWD_PATTERN, clientPassword) && password.comparePass(clientPassword)){
+							authSocket.getOutputStream().write((int) '\06');		//послать клиенту ACK (подтверждение)
+							break;
+						}
+						else
+							authSocket.getOutputStream().write('\15');	//negative ACK
+					}
+				}
 
 				System.out.println(String.format(CLIENT_CONNECTED_MSG, authSocket.getInetAddress()));	//вывод строки подключения
 
-				authSocket.getOutputStream().write((int) '\06');		//послать клиенту ACK (подтверждение)
-				
 				//послать клиенту данные инициализации модели
-				try(ObjectOutputStream ois = new ObjectOutputStream(authSocket.getOutputStream())){
+				try (ObjectOutputStream ois = new ObjectOutputStream(authSocket.getOutputStream())) {
 					ois.writeObject(new ViewInitData((model)));
 				}
-				authSocket.close();
-
-				//начинаем передачу клиенту информации после
-				ServerToClientTransmissionDaemon stctd = new ServerToClientTransmissionDaemon(model.getUniverse(), null);
-				stctd.run();	//выполняем код демона в основном потоке (пока что так)
 			} catch (IOException ex) {
 				System.err.println(ex);
 			}

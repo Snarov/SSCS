@@ -13,6 +13,7 @@ public class SendingInfo implements Serializable {
 	private double hydrogenLevel;
 	private double batteryLevel;
 	private double solarPanelAngle;
+	private long frameTime;	
 
 	public Point3d getStationCoords() {
 		return stationCoords;
@@ -68,5 +69,13 @@ public class SendingInfo implements Serializable {
 
 	public void setSolarPanelAngle(double solarPanelAngle) {
 		this.solarPanelAngle = solarPanelAngle;
+	}
+
+	public long getFrameTime() {
+		return frameTime;
+	}
+
+	public void setFrameTime(long frameTime) {
+		this.frameTime = frameTime;
 	}
 }

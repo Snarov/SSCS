@@ -7,13 +7,11 @@ import serverSnarovIA.modelSnarovIA.stationSnarovIA.Station;
 //класс-оболочка над SendingInfo, обновляющий отправляемую информацию
 public class StationInfoRefresher {
 
-	//поля
 	private final PhysicalUniverse universe;			//виртуальная вселенная, в которой находится информация
 
 	private SendingInfo sendingInfo;
 
-	//конструкторы
-	public StationInfoRefresher(PhysicalUniverse aUniverse) {
+		public StationInfoRefresher(PhysicalUniverse aUniverse) {
 		universe = aUniverse;
 	}
 
@@ -32,6 +30,7 @@ public class StationInfoRefresher {
 				sendingInfo.setHydrogenLevel(stationPanel.getHydrogenLevel());
 				sendingInfo.setBatteryLevel(stationPanel.getBatteryLevel());
 				sendingInfo.setSolarPanelAngle(stationPanel.getSolarPanelAngle());
+				sendingInfo.setFrameTime((long)(universe.getdT() * universe.getTimeFactor()));
 			} catch (InterruptedException ex) {
 			}
 		}

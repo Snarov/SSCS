@@ -1,8 +1,9 @@
 package serverSnarovIA.modelSnarovIA.physicsSnarovIA;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Serializable;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.vecmath.Vector3d;
 
 //представляет собой контейнер для физических тел и силовых полей. Обеспечивает их взаимодействие в пр-ве.

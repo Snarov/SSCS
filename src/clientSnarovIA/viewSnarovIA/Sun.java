@@ -17,20 +17,15 @@ import javax.vecmath.Vector3d;
 //спрайтовое солнце и источник света
 public class Sun extends TransformGroup{
 	//примитив
-	private static final float SPRITE_SIZE = 2.4f;		//длина стороны спрайта
+	private static final float SPRITE_SIZE = 50f;		//длина стороны спрайта
 	//текстура
 	private static final String SUN_TEX_NAME = "SunTex.jpg";
 	private static final int TEXTURE_WIDTH = 2400;
 	private static final int TEXTURE_HEIGHT = 2400;
-//	//материал
-//	private static final Color3f DEF_AMBIENT_COLOR = new Color3f(.1f, .1f, .1f);
-//	private static final Color3f DEF_EMISSIVE_COLOR = new Color3f(0, 0, 0);
-//	private static final Color3f DEF_DIFFUSE_COLOR = new Color3f(.6f, .6f, .6f);
-//	private static final Color3f DEF_SPECULAR_COLOR = new Color3f(0, 0, 0);
-//	private static final float DEF_SHINESS = 300f;
+
 	private static final Color3f SUN_LIGHT_COLOR = new Color3f(1, 1, 1);
 	private static final Point3f SUN_LIGHT_ATTENUATION = new Point3f(.5f, 0, 0);
-	private static final int AU = 20;
+	private static final int AU = 300;
 	
 	public Sun(String texturePath, Component observer){
 		Appearance sunApp = new Appearance();
@@ -43,7 +38,7 @@ public class Sun extends TransformGroup{
 		Point3f sunCoords = new Point3f(AU, 0, 0);
 		PointLight sunLight = new PointLight(SUN_LIGHT_COLOR, sunCoords, SUN_LIGHT_ATTENUATION);
 		Bounds influenceRegion = new BoundingSphere(new Point3d(sunCoords.x, sunCoords.y, sunCoords.z) , 2 * AU);
-		sunLight.setBounds(influenceRegion);
+		sunLight.setInfluencingBounds(influenceRegion);
 		sunLight.setEnable(true);
 		addChild(sun);
 		addChild(sunLight);

@@ -11,6 +11,7 @@ import javax.media.j3d.TransformGroup;
 import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Color3f;
 import javax.vecmath.Matrix3d;
+import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
 //Планета вместе с атмосферой
@@ -20,17 +21,23 @@ public class Earth extends TransformGroup {
 	private static final int EARTH_SPHERE_DIVISIONS = 128;	//это вам не полтора полигона
 	//текстура
 	private static final String EARTH_TEX_NAME = "EarthTex.jpg";
-	private static final int TEXTURE_WIDTH = 2500;
-	private static final int TEXTURE_HEIGHT = 1250;
+	private static final int TEXTURE_WIDTH = 10800;
+	private static final int TEXTURE_HEIGHT = 5400;
 	//материал
 	private static final Color3f DEF_AMBIENT_COLOR = new Color3f(.1f, .1f, .1f);
 	private static final Color3f DEF_EMISSIVE_COLOR = new Color3f(0, 0, 0);
 	private static final Color3f DEF_DIFFUSE_COLOR = new Color3f(.6f, .6f, .6f);
-	private static final Color3f DEF_SPECULAR_COLOR = new Color3f(1f, 1f, 1f);
-	private static final float DEF_SHINESS = 300f;
+	private static final Color3f DEF_SPECULAR_COLOR = new Color3f(0, 0, 0);
+	private static final float DEF_SHINESS = 70f;
 	private static final double OMEGA = 7.29211E-5;									//скорость вращения земли (рад/с)
 	private static final double AXIS_ANGLE = 0.40909263;							//угол наклона оси земли к плоскости орбиты
 	private static final Vector3d ROTATION_AXIS = new Vector3d(0, 1, 0);			//вектор оси вращения
+	//атмосфера
+	private static final int ATM_DETALISATION = 20;
+	private static final Color3f ATM_COLOR = new Color3f(0, 127f  / 255, 1);
+	private static final float ATM_TRANSP = .95f;
+	private static final float ATM_ALTITUDE = .05f;
+	
 
 	static {
 		Matrix3d rotation = new Matrix3d();
@@ -69,8 +76,9 @@ public class Earth extends TransformGroup {
 //		Appearance atmApp = new Appearance();
 //		atmApp.setColoringAttributes(new ColoringAttributes(.0f, .0f, .7f, ColoringAttributes.NICEST));
 //		atmApp.setTransparencyAttributes(new TransparencyAttributes(TransparencyAttributes.NICEST, .3f));
+//		atmApp.setPolygonAttributes(new PolygonAttributes(PolygonAttributes.POLYGON_FILL, PolygonAttributes.CULL_FRONT, 0));
 //		Sphere atm = new Sphere(EARTH_RAD * 1.01f, Primitive.GENERATE_NORMALS + Primitive.GENERATE_TEXTURE_COORDS, EARTH_SPHERE_DIVISIONS, atmApp);
-		//earth.addChild(atm);
+		addChild(new Atmosphere(new Point3d(), EARTH_RAD, ATM_ALTITUDE, ATM_DETALISATION, ATM_TRANSP,  ATM_COLOR));
 	}
 
 	//вращает землю вокруг своей оси 

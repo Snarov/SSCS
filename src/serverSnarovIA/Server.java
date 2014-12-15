@@ -185,6 +185,9 @@ public class Server {
 				try (ObjectOutputStream ois = new ObjectOutputStream(authSocket.getOutputStream())) {
 					ois.writeObject(new ViewInitData((model)));
 				}
+				
+				ServerToClientTransmissionDaemon stctd = new ServerToClientTransmissionDaemon(model.getUniverse(), authSocket.getInetAddress());
+				stctd.run();
 			} catch (IOException ex) {
 				System.err.println(ex);
 			}

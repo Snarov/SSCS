@@ -405,6 +405,7 @@ public class Station extends PhysicalBody implements Serializable{
 	public final static double SOLAR_PANEL_ROTATE_SPEED = 1;
 	public final static double ELECTROLYZER_MAX_POWER = 1000;
 	public final static double ELECTORLYZER_ECE = 0.5;
+	
 
 	//поля
 	private final Vector3d bodyDirection = new Vector3d(0, 1, 0);	//направление станции (ориентация верхней части)
@@ -435,7 +436,7 @@ public class Station extends PhysicalBody implements Serializable{
 			Point3d earthCoords
 	) {
 		super(center, RADIUS, MASS);
-
+		
 		battery = new Battery(batteryCapacity > 0 ? batteryCapacity : BATTERY_CAPACITY);
 		water = new Reservoir(waterCapacity > 0 ? waterCapacity : WATER_CAPACITY);
 		oxygen = new Reservoir(oxygenCapacity > 0 ? oxygenCapacity : OXYGEN_CAPACITY);

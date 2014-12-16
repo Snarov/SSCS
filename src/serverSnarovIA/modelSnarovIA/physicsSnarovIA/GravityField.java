@@ -4,6 +4,7 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
 import static java.lang.Math.pow;
+import serverSnarovIA.modelSnarovIA.Model;
 
 //представляет собой гравитационное поле в пространстве, воздействующее силой притяжения на материальные точки внутри
 //области ограничивающей сферы
@@ -23,8 +24,7 @@ public class GravityField extends ForceField {
 		if (getBounds().getRadius() <= 0)
 			getBounds().setRadius(GRAVITY_FIELD_RADIUS);
 		if (aMass > 0)
-
-		mass = aMass;
+			mass = aMass;
 	}
 
 	public GravityField(double aMass, Point3d aCenter, BoundingSphere aBounds) {
@@ -72,5 +72,12 @@ public class GravityField extends ForceField {
 			}
 		}
 		return gravityForce;
+	}
+	
+	public Vector3d getEscapeVelocity(Point3d point){
+		double velocityValue = Math.sqrt(G * mass / getCenter().distance(point));
+		Vector3d retval = new Vector3d(1, 0, 0);
+		retval.scale(velocityValue);
+		return retval;
 	}
 }

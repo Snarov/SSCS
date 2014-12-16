@@ -97,7 +97,10 @@ public class MaterialPoint extends Point3d{
 	//поведение
 	public void addForce(Vector3d additionalForce) {                        //прибавляет новую силу к текущему вектору силы
 		force.add(additionalForce);
-		acceleration.scale(1 / mass, additionalForce);                  //и задает вектор ускорения
+		
+		Vector3d additionalAcceleration = new Vector3d(additionalForce);
+		additionalAcceleration.scale(1 / mass);
+		acceleration.add(additionalAcceleration);                  //и задает вектор ускорения
 	}
 
 	public Vector3d integrate(long timeMillis) {     //высчитывает состояние объекта через timeMillis миллисекунд,используя метод интегрирования Эйлера

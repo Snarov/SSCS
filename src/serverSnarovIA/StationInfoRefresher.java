@@ -9,7 +9,7 @@ public class StationInfoRefresher {
 
 	private final PhysicalUniverse universe;			//виртуальная вселенная, в которой находится информация
 
-	private SendingInfo sendingInfo;
+	private final SendingInfo sendingInfo = new SendingInfo();
 
 		public StationInfoRefresher(PhysicalUniverse aUniverse) {
 		universe = aUniverse;
@@ -20,7 +20,7 @@ public class StationInfoRefresher {
 			try {
 				universe.wait();
 				//после того, как освободится блокировка
-				Station station = (Station) universe.getPhysBodies().get("Station");
+				Station station = (Station) universe.getPhysBodies().get("STATION");
 				sendingInfo.setStationCoords(new Point3d(station.getCenter()));
 
 				Station.Panel stationPanel = (station.getPanel());

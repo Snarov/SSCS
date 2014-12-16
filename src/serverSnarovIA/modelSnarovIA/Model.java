@@ -1,6 +1,7 @@
 package serverSnarovIA.modelSnarovIA;
 
 import javax.vecmath.Point3d;
+import javax.vecmath.Vector3d;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.Atmosphere;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.BoundingSphere;
 import serverSnarovIA.modelSnarovIA.physicsSnarovIA.GravityField;
@@ -13,6 +14,8 @@ public class Model {
 	//константы
 
 	private static final String CONF_FILE_NAME = "/home/snarov/NetBeansProjects/SSCS/SSCS.conf";
+	public static final double EARTH_RAD = 6.378E6;
+	private static final double DEF_ALTITUDE = 300000;
 
 	//поля
 	private static long frameRate = 33;									//время кадра (мс)
@@ -20,7 +23,8 @@ public class Model {
 
 	//конструкторы
 	public Model(long aFrameRate) {
-		frameRate = aFrameRate;
+		if(aFrameRate > 0)
+			frameRate = aFrameRate;
 		
 		//чтение файла конфигурации
 		ConfReader confReader = new ConfReader(CONF_FILE_NAME);
@@ -56,8 +60,8 @@ public class Model {
 		physicalUniverse = new PhysicalUniverse(frameRate, 1);
 
 		MaterialPoint center = new MaterialPoint(0, 0, 1);
-		center.scale(altitude);
-		
+		center.scale(EARTH_RAD + (altitude > 0 ? altitude : DEF_ALTITUDE));
+			
 		Station station = new Station(
 				center,
 				batteryCapacity,
@@ -76,6 +80,9 @@ public class Model {
 
 		GravityField earthGravity = new GravityField(earthMass, new BoundingSphere(new Point3d(), gravityFieldRadius));
 
+		Vector3d velocity = earthGravity.getEscapeVelocity(center);
+		station.getCenter().setVelocity(velocity);
+		
 		Point3d atmCenter = new Point3d();
 		Atmosphere earthAtmosphere = new Atmosphere(
 				new BoundingSphere(atmCenter, atmExternalBoundsRadius),
@@ -87,7 +94,7 @@ public class Model {
 				atmMolarMass
 		);
 
-		Point3d sunCoords = new Point3d(0, 0, 1);
+		Point3d sunCoords = new Point3d(1, 0, 0);
 		sunCoords.scale(sunDistance > 0 ? sunDistance : Illuminant.AU);
 		Illuminant sun = new Illuminant(
 				sunIntensity,
@@ -100,6 +107,7 @@ public class Model {
 		physicalUniverse.addForceField("EARTH_ATMOSPHERE", earthAtmosphere);
 		physicalUniverse.addPhysBody("STATION", station);
 		physicalUniverse.addLightSource("SUN", sun);
+
 	}
 	
 	public Model(long aFrameRate, PhysicalUniverse oldUniverse){

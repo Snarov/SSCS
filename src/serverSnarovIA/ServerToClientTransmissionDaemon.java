@@ -21,9 +21,10 @@ public class ServerToClientTransmissionDaemon extends Thread {
 
 	//конструкторы
 	public ServerToClientTransmissionDaemon(PhysicalUniverse physUniverse, InetAddress aRemoteViewAddr) throws SocketException {
-		socket = new DatagramSocket();
-		socket.setSoTimeout(ACK_TIMEOUT);
+		socket = new DatagramSocket(REMOTE_VIEW_PORT);
 		
+		//socket.setSoTimeout(ACK_TIMEOUT);
+
 		stationInfoRefresher = new StationInfoRefresher(physUniverse);
 		remoteViewAddr = aRemoteViewAddr;
 	}
@@ -33,7 +34,7 @@ public class ServerToClientTransmissionDaemon extends Thread {
 		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();			//поток байтов для дальнейшей передачи
 		try (ObjectOutputStream oos = new ObjectOutputStream(byteStream)) {
 			short lostPacketsCount = 0;
-			
+
 			while (lostPacketsCount < MAX_PACKETS_LOSS) {
 				stationInfoRefresher.refresh();
 
@@ -42,16 +43,19 @@ public class ServerToClientTransmissionDaemon extends Thread {
 
 				DatagramPacket datagram = new DatagramPacket(buffer, buffer.length, remoteViewAddr, REMOTE_VIEW_PORT);
 				socket.send(datagram);
-				try {
-					socket.receive(datagram);
-					lostPacketsCount = 0;
-				}catch(SocketTimeoutException ex){
-					++lostPacketsCount;
-				}
-				
+//				try {
+//					socket.receive(datagram);
+//					lostPacketsCount = 0;
+//				} catch (SocketTimeoutException ex) {
+//					++lostPacketsCount;
+//				}
+
+				oos.reset();
 				byteStream.reset();
 			}
 		} catch (IOException ex) {
 		}
+		
+		System.out.println(remoteViewAddr.toString() + "отключился");
 	}
 }

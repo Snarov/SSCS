@@ -19,7 +19,7 @@ public class ViewInitData implements Serializable{
 	
 	//конструкторы
 	public ViewInitData(Model model){
-		Station station = (Station)model.getUniverse().getPhysBodies().get("Station");
+		Station station = (Station)model.getUniverse().getPhysBodies().get("STATION");
 		
 		batteryCapacity = station.getBatteryCapacity();
 		waterCapacity = station.getWaterCapacity();

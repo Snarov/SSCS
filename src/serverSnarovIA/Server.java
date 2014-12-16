@@ -25,6 +25,7 @@ public class Server {
 	private static final String SAVE_READ_ERR = "Ошибка чтения сохраненного состояния вселенной";
 	private static final String CLIENT_CONNECTED_MSG = "%s connected";
 	private static final int REGISTRY_PORT = 4096;
+	private static final byte[] RECEIVING = {'\06', '\06', '\06'};
 	//поля
 	private static boolean restart = false;								//инициализируется ли виртуальная вселенная заново
 	private static int port = 1488;										//порт, на котором работает сервер
@@ -124,9 +125,9 @@ public class Server {
 
 	private static void setupModel() {	//проводит необходимые действия для работы с моделью
 		//инициализация модели
-		if (restart)
+		if (restart) {
 			model = new Model(modelFrameRate);
-		else {
+		} else {
 			try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveDir + "/" + UniverseStateSaverDaemon.SAVENAME))) {
 				PhysicalUniverse oldUniverse = (PhysicalUniverse) ois.readObject();
 				model = new Model(modelFrameRate, oldUniverse);
@@ -163,29 +164,37 @@ public class Server {
 		while (true) {
 			try (ServerSocket serverSocket = new ServerSocket(port, 1); //слушающий сокет для 1 входящего соединения
 					Socket authSocket = serverSocket.accept() //получение оконечной точки сетевого соединения с клиентом для проверки пароля
-			) {					Scanner scanner = new Scanner(authSocket.getInputStream());
+					) {
+				Scanner scanner = new Scanner(authSocket.getInputStream());
 
 				String clientPassword;
 
 				while (true) {			//ожидание передачи верного пароля от клиента
 					if (scanner.hasNextLine()) {
 						clientPassword = scanner.nextLine();
-						if (Pattern.matches(Password.PWD_PATTERN, clientPassword) && password.comparePass(clientPassword)){
+						if (Pattern.matches(Password.PWD_PATTERN, clientPassword) && password.comparePass(clientPassword)) {
 							authSocket.getOutputStream().write((int) '\06');		//послать клиенту ACK (подтверждение)
 							break;
-						}
-						else
+						} else {
 							authSocket.getOutputStream().write('\15');	//negative ACK
+						}
 					}
 				}
 
 				System.out.println(String.format(CLIENT_CONNECTED_MSG, authSocket.getInetAddress()));	//вывод строки подключения
 
 				//послать клиенту данные инициализации модели
-				try (ObjectOutputStream ois = new ObjectOutputStream(authSocket.getOutputStream())) {
-					ois.writeObject(new ViewInitData((model)));
-				}
-				
+				ObjectOutputStream ois = new ObjectOutputStream(authSocket.getOutputStream());
+				ois.writeObject(new ViewInitData((model)));
+
+				//ожидание подтверждения готовности к приему
+				byte[] recBuf;
+
+				do {
+					recBuf = new byte[3];
+					authSocket.getInputStream().read(recBuf);
+				} while (!Arrays.equals(recBuf, RECEIVING));
+
 				ServerToClientTransmissionDaemon stctd = new ServerToClientTransmissionDaemon(model.getUniverse(), authSocket.getInetAddress());
 				stctd.run();
 			} catch (IOException ex) {
